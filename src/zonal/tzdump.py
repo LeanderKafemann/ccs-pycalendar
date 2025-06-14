@@ -14,7 +14,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ##
-
+from typing import Any, List, Tuple
 from pycalendar.datetime import DateTime
 from pycalendar.exceptions import InvalidData
 from pycalendar.icalendar.calendar import Calendar
@@ -22,60 +22,52 @@ import getopt
 import os
 import sys
 
-
-def loadCalendar(file, verbose):
-
+def loadCalendar(file: str, verbose: bool) -> Calendar:
     cal = Calendar()
     if verbose:
-        print "Parsing calendar data: %s" % (file,)
+        print("Parsing calendar data: %s" % (file,))
     with open(file, "r") as fin:
         try:
             cal.parse(fin)
-        except InvalidData, e:
-            print "Failed to parse bad data: %s" % (e.mData,)
+        except InvalidData as e:
+            print("Failed to parse bad data: %s" % (e.mData,))
             raise
     return cal
 
-
-def getExpandedDates(cal, start, end):
-
+def getExpandedDates(cal: Calendar, start: DateTime, end: DateTime) -> List[Tuple[DateTime, DateTime, int, int]]:
     vtz = cal.getComponents()[0]
     expanded = vtz.expandAll(start, end)
-    expanded.sort(cmp=lambda x, y: DateTime.sort(x[0], y[0]))
+    expanded.sort(key=lambda x: x[0])
     return expanded
 
-
-def sortedList(setdata):
+def sortedList(setdata: List[Tuple[Any, ...]]) -> List[Tuple[Any, ...]]:
     l = list(setdata)
-    l.sort(cmp=lambda x, y: DateTime.sort(x[0], y[0]))
+    l.sort(key=lambda x: x[0])
     return l
 
-
-def formattedExpandedDates(expanded):
+def formattedExpandedDates(expanded: List[Tuple[DateTime, DateTime, int, int]]) -> str:
     items = sortedList([(item[0], item[1], secondsToTime(item[2]), secondsToTime(item[3]),) for item in expanded])
     return ", ".join(["(%s, %s, %s, %s)" % item for item in items])
 
-
-def secondsToTime(seconds):
+def secondsToTime(seconds: int) -> str:
     if seconds < 0:
         seconds = -seconds
         negative = "-"
     else:
         negative = ""
     secs = divmod(seconds, 60)[1]
-    mins = divmod(seconds / 60, 60)[1]
-    hours = divmod(seconds / (60 * 60), 60)[1]
+    mins = divmod(seconds // 60, 60)[1]
+    hours = divmod(seconds // (60 * 60), 60)[1]
     if secs:
         return "%s%02d:%02d:%02d" % (negative, hours, mins, secs,)
     else:
         return "%s%02d:%02d" % (negative, hours, mins,)
 
-
-def usage(error_msg=None):
+def usage(error_msg: str = None) -> None:
     if error_msg:
-        print error_msg
+        print(error_msg)
 
-    print """Usage: tzdump [options] FILE
+    print("""Usage: tzdump [options] FILE
 Options:
     -h            Print this help and exit
     -v            Be verbose
@@ -89,20 +81,19 @@ Description:
     This utility will dump the transitions in a VTIMEZONE over
     the request time range.
 
-"""
+""")
 
     if error_msg:
         raise ValueError(error_msg)
     else:
         sys.exit(0)
 
-
 if __name__ == '__main__':
 
-    verbose = False
-    startYear = 1918
-    endYear = 2018
-    fpath = None
+    verbose: bool = False
+    startYear: int = 1918
+    endYear: int = 2018
+    fpath: str = None
 
     options, args = getopt.getopt(sys.argv[1:], "hv", ["start=", "end=", ])
 
@@ -128,4 +119,4 @@ if __name__ == '__main__':
 
     cal = loadCalendar(fpath, verbose)
     dates = getExpandedDates(cal, start, end)
-    print formattedExpandedDates(dates)
+    print(formattedExpandedDates(dates))

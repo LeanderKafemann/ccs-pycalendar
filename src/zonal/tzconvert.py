@@ -14,13 +14,13 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ##
-
 from __future__ import with_statement
 from __future__ import print_function
 
+from typing import Dict, Any, Set, List, Optional, Union
 from pycalendar.icalendar.calendar import Calendar
 from xml.etree.cElementTree import ParseError as XMLParseError
-import cStringIO as StringIO
+import io as StringIO
 import getopt
 import os
 import rule
@@ -30,27 +30,27 @@ import urllib
 import xml.etree.cElementTree as XML
 import zone
 
-"""
-Classes to parse a tzdata files and generate VTIMEZONE data.
-"""
-
 __all__ = (
     "tzconvert",
 )
 
-
 class tzconvert(object):
 
-    def __init__(self, verbose=False):
-        self.rules = {}
-        self.zones = {}
-        self.links = {}
-        self.verbose = verbose
+    rules: Dict[str, rule.RuleSet]
+    zones: Dict[str, "zone.Zone"]
+    links: Dict[str, str]
+    verbose: bool
 
-    def getZoneNames(self):
+    def __init__(self, verbose: bool = False) -> None:
+        self.rules: Dict[str, rule.RuleSet] = {}
+        self.zones: Dict[str, "zone.Zone"] = {}
+        self.links: Dict[str, str] = {}
+        self.verbose: bool = verbose
+
+    def getZoneNames(self) -> Set[str]:
         return set(self.zones.keys())
 
-    def parse(self, file):
+    def parse(self, file: str) -> None:
         try:
             with open(file, "r") as f:
                 ctr = 0
@@ -74,24 +74,24 @@ class tzconvert(object):
                             assert False, "Could not parse line %d from tzconvert file: '%s'" % (ctr, line,)
                         else:
                             break
-        except:
+        except Exception:
             print("Failed to parse file %s" % (file,))
             raise
 
-    def parseRule(self, line):
+    def parseRule(self, line: str) -> None:
         ruleitem = rule.Rule()
         ruleitem.parse(line)
         self.rules.setdefault(ruleitem.name, rule.RuleSet()).rules.append(ruleitem)
 
-    def parseZone(self, line, f):
-        os = StringIO.StringIO()
-        os.write(line)
-        last_line = None
+    def parseZone(self, line: str, f: Any) -> Optional[str]:
+        osbuf = StringIO.StringIO()
+        osbuf.write(line)
+        last_line: Optional[str] = None
         for nextline in f:
             nextline = nextline[:-1]
             if nextline.startswith("\t") or nextline.startswith(" "):
-                os.write("\n")
-                os.write(nextline)
+                osbuf.write("\n")
+                osbuf.write(nextline)
             elif nextline.startswith("#") or len(nextline) == 0:
                 continue
             else:
@@ -99,27 +99,24 @@ class tzconvert(object):
                 break
 
         zoneitem = zone.Zone()
-        zoneitem.parse(os.getvalue())
+        zoneitem.parse(osbuf.getvalue())
         self.zones[zoneitem.name] = zoneitem
 
         return last_line
 
-    def parseLink(self, line):
-
+    def parseLink(self, line: str) -> None:
         splits = line.split()
         linkFrom = splits[1]
         linkTo = splits[2]
         self.links[linkTo] = linkFrom
 
-    def parseWindowsAliases(self, aliases):
-
+    def parseWindowsAliases(self, aliases: str) -> None:
         try:
             with open(aliases) as xmlfile:
                 xmlroot = XML.ElementTree(file=xmlfile).getroot()
         except (IOError, XMLParseError):
             raise ValueError("Unable to open or read windows alias file: {}".format(aliases))
 
-        # Extract the mappings
         try:
             for elem in xmlroot.findall("./windowsZones/mapTimezones/mapZone"):
                 if elem.get("territory", "") == "001":
@@ -130,21 +127,25 @@ class tzconvert(object):
         except (ValueError, KeyError):
             raise ValueError("Unable to parse windows alias file: {}".format(aliases))
 
-    def expandZone(self, zonename, minYear, maxYear=2018):
+    def expandZone(self, zonename: str, minYear: int, maxYear: int = 2018) -> List[Any]:
         """
         Expand a zones transition dates up to the specified year.
         """
-        zone = self.zones[zonename]
-        expanded = zone.expand(self.rules, minYear, maxYear)
+        zoneobj = self.zones[zonename]
+        expanded = zoneobj.expand(self.rules, minYear, maxYear)
         return [(item[0], item[1], item[2],) for item in expanded]
 
-    def vtimezones(self, minYear, maxYear=2018, filterzones=None):
+    def vtimezones(
+        self,
+        minYear: int,
+        maxYear: int = 2018,
+        filterzones: Optional[Union[List[str], Set[str]]] = None
+    ) -> str:
         """
         Generate iCalendar data for all VTIMEZONEs or just those specified
         """
-
         cal = Calendar()
-        for tzzone in self.zones.itervalues():
+        for tzzone in self.zones.values():
             if filterzones and tzzone.name not in filterzones:
                 continue
             vtz = tzzone.vtimezone(cal, self.rules, minYear, maxYear)
@@ -152,9 +153,16 @@ class tzconvert(object):
 
         return cal.getText()
 
-    def generateZoneinfoFiles(self, outputdir, minYear, maxYear=2018, links=True, windowsAliases=None, filterzones=None):
+    def generateZoneinfoFiles(
+        self,
+        outputdir: str,
+        minYear: int,
+        maxYear: int = 2018,
+        links: bool = True,
+        windowsAliases: Optional[str] = None,
+        filterzones: Optional[Union[List[str], Set[str]]] = None
+    ) -> None:
 
-        # Empty current directory
         try:
             for root, dirs, files in os.walk(outputdir, topdown=False):
                 for name in files:
@@ -164,7 +172,7 @@ class tzconvert(object):
         except OSError:
             pass
 
-        for tzzone in self.zones.itervalues():
+        for tzzone in self.zones.values():
             if filterzones and tzzone.name not in filterzones:
                 continue
             cal = Calendar()
@@ -184,10 +192,9 @@ class tzconvert(object):
             if windowsAliases is not None:
                 self.parseWindowsAliases(windowsAliases)
 
-            link_list = []
-            for linkTo, linkFrom in sorted(self.links.iteritems(), key=lambda x: x[0]):
+            link_list: List[str] = []
+            for linkTo, linkFrom in sorted(self.links.items(), key=lambda x: x[0]):
 
-                # Check for existing output file
                 fromPath = os.path.join(outputdir, linkFrom + ".ics")
                 if not os.path.exists(fromPath):
                     print("Missing link from: %s to %s" % (linkFrom, linkTo,))
@@ -207,13 +214,12 @@ class tzconvert(object):
 
                 link_list.append("%s\t%s" % (linkTo, linkFrom,))
 
-            # Generate link mapping file
             linkPath = os.path.join(outputdir, "links.txt")
             with open(linkPath, "w") as f:
                 f.write("\n".join(link_list))
 
 
-def usage(error_msg=None):
+def usage(error_msg: Optional[str] = None) -> None:
     if error_msg:
         print(error_msg)
 
@@ -238,81 +244,3 @@ Description:
         raise ValueError(error_msg)
     else:
         sys.exit(0)
-
-
-if __name__ == '__main__':
-
-    # Set the PRODID value used in generated iCalendar data
-    prodid = "-//mulberrymail.com//Zonal//EN"
-    rootdir = "../../temp"
-    startYear = 1800
-    endYear = 2018
-    windowsAliases = None
-
-    options, args = getopt.getopt(sys.argv[1:], "h", ["prodid=", "root=", "start=", "end=", "windows="])
-
-    for option, value in options:
-        if option == "-h":
-            usage()
-        elif option == "--prodid":
-            prodid = value
-        elif option == "--root":
-            rootdir = os.path.expanduser(value)
-        elif option == "--start":
-            startYear = int(value)
-        elif option == "--end":
-            endYear = int(value)
-        elif option == "--windows":
-            windowsAliases = os.path.expanduser(value)
-        else:
-            usage("Unrecognized option: %s" % (option,))
-
-    if not os.path.exists(rootdir):
-        os.makedirs(rootdir)
-    zonedir = os.path.join(rootdir, "tzdata")
-    if not os.path.exists(zonedir):
-        print("Downloading and extracting IANA timezone database")
-        os.mkdir(zonedir)
-        iana = "https://www.iana.org/time-zones/repository/tzdata-latest.tar.gz"
-        data = urllib.urlretrieve(iana)
-        print("Extract data at: %s" % (data[0]))
-        with tarfile.open(data[0], "r:gz") as t:
-            t.extractall(zonedir)
-
-    if windowsAliases is None:
-        windowsAliases = os.path.join(rootdir, "windowsZones.xml")
-    if not os.path.exists(windowsAliases):
-        print("Downloading Unicode database")
-        unicode = "http://unicode.org/repos/cldr/tags/latest/common/supplemental/windowsZones.xml"
-        data = urllib.urlretrieve(unicode, windowsAliases)
-
-    Calendar.sProdID = prodid
-
-    zonedir = os.path.join(rootdir, "tzdata")
-    zonefiles = (
-        "northamerica",
-        "southamerica",
-        "europe",
-        "africa",
-        "asia",
-        "australasia",
-        "antarctica",
-        "etcetera",
-        "backward",
-    )
-
-    parser = tzconvert(verbose=True)
-    for file in zonefiles:
-        parser.parse(os.path.join(zonedir, file))
-
-    parser.generateZoneinfoFiles(
-        os.path.join(rootdir, "zoneinfo"),
-        startYear,
-        endYear,
-        windowsAliases=windowsAliases,
-        filterzones=(
-            # "America/Montevideo",
-            # "Europe/Paris",
-            # "Africa/Cairo",
-        )
-    )

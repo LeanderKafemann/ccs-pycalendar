@@ -13,7 +13,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ##
-
+from typing import Any
 
 class DateTime(object):
     """
@@ -21,17 +21,20 @@ class DateTime(object):
     and that can generate appropriate localtime or UTC offsets based on Zone/Rule offsets.
     """
 
-    def __init__(self, dt, mode):
+    dt: Any
+    mode: str
+
+    def __init__(self, dt: Any, mode: str) -> None:
         self.dt = dt
         self.mode = mode
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self.dt)
 
-    def compareDateTime(self, other):
+    def compareDateTime(self, other: "DateTime") -> int:
         return self.dt.compareDateTime(other.dt)
 
-    def getLocaltime(self, offset, stdoffset):
+    def getLocaltime(self, offset: int, stdoffset: int) -> Any:
         new_dt = self.dt.duplicate()
         if self.mode == "u":
             new_dt.offsetSeconds(offset)
@@ -39,7 +42,7 @@ class DateTime(object):
             new_dt.offsetSeconds(-stdoffset + offset)
         return new_dt
 
-    def getUTC(self, offset, stdoffset):
+    def getUTC(self, offset: int, stdoffset: int) -> Any:
         new_dt = self.dt.duplicate()
         if self.mode == "u":
             pass
