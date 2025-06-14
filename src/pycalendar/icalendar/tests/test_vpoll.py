@@ -15,7 +15,7 @@
 ##
 
 from pycalendar.icalendar.calendar import Calendar
-import cStringIO as StringIO
+import io as StringIO
 import difflib
 import unittest
 

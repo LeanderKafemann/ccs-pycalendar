@@ -14,7 +14,7 @@
 #    limitations under the License.
 ##
 
-from cStringIO import StringIO
+from io import StringIO
 from pycalendar.duration import Duration
 from pycalendar.parser import ParserContext
 import unittest

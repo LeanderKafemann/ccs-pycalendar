@@ -18,7 +18,7 @@ from pycalendar.exceptions import InvalidData
 from pycalendar.parser import ParserContext
 from pycalendar.vcard.card import Card
 from pycalendar.vcard.property import Property
-import cStringIO as StringIO
+import io as StringIO
 import difflib
 import unittest
 

@@ -21,7 +21,7 @@ from pycalendar.icalendar.property import Property
 from pycalendar.parser import ParserContext
 from pycalendar.period import Period
 from pycalendar.timezone import Timezone
-import cStringIO as StringIO
+import io as StringIO
 import difflib
 import unittest
 

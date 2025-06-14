@@ -14,7 +14,7 @@
 #    limitations under the License.
 ##
 
-from cStringIO import StringIO
+from io import StringIO
 from pycalendar.icalendar.calendar import Calendar
 from pycalendar.tests.utils import TestPyCalendar
 from pycalendar.timezonedb import TimezoneDatabase
