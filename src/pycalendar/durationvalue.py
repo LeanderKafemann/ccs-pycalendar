@@ -14,15 +14,15 @@
 #    limitations under the License.
 ##
 
+from typing import Any
 from pycalendar import xmldefinitions
 from pycalendar.duration import Duration
 from pycalendar.value import Value
 from pycalendar.valueutils import WrapperValue
 
-
 class DurationValue(WrapperValue, Value):
-
     _wrappedClass = Duration
-    _wrappedType = Value.VALUETYPE_DURATION
+    _wrappedType: int = Value.VALUETYPE_DURATION
+    mValue: Duration
 
 Value.registerType(Value.VALUETYPE_DURATION, DurationValue, xmldefinitions.value_duration)

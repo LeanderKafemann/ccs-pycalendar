@@ -14,54 +14,54 @@
 #    limitations under the License.
 ##
 
-from cStringIO import StringIO
+from io import StringIO
 from pycalendar.componentbase import ComponentBase
 from pycalendar.exceptions import InvalidData, ValidationError
 from pycalendar.parser import ParserContext
 from pycalendar.utils import readFoldedLine
 import json
-
+from typing import Any, Optional, List, Tuple
 
 class ContainerBase(ComponentBase):
     """
     Represents the top-level component (i.e., VCALENDAR or vCARD)
     """
 
-    sProdID = "-//calendarserver.org//PyCalendar v1//EN"
-    sDomain = "calendarserver.org"
+    sProdID: str = "-//calendarserver.org//PyCalendar v1//EN"
+    sDomain: str = "calendarserver.org"
 
     # These must be set by derived classes
-    sContainerDescriptor = None
-    sComponentType = None
-    sPropertyType = None
+    sContainerDescriptor: Optional[str] = None
+    sComponentType: Any = None
+    sPropertyType: Any = None
 
-    sFormatText = None
-    sFormatJSON = None
+    sFormatText: Optional[str] = None
+    sFormatJSON: Optional[str] = None
 
     @classmethod
-    def setPRODID(cls, prodid):
+    def setPRODID(cls, prodid: str) -> None:
         cls.sProdID = prodid
 
     @classmethod
-    def setDomain(cls, domain):
+    def setDomain(cls, domain: str) -> None:
         cls.sDomain = domain
 
-    def __init__(self, add_defaults=True):
+    def __init__(self, add_defaults: bool = True) -> None:
         super(ContainerBase, self).__init__()
 
         if add_defaults:
             self.addDefaultProperties()
 
-    def duplicate(self):
+    def duplicate(self) -> "ContainerBase":
         return super(ContainerBase, self).duplicate()
 
-    def getType(self):
+    def getType(self) -> str:
         raise NotImplementedError
 
-    def finalise(self):
+    def finalise(self) -> None:
         pass
 
-    def validate(self, doFix=False, doRaise=False):
+    def validate(self, doFix: bool = False, doRaise: bool = False) -> Tuple[List[str], List[str]]:
         """
         Validate the data in this component and optionally fix any problems. Return
         a tuple containing two lists: the first describes problems that were fixed, the
@@ -76,7 +76,7 @@ class ContainerBase(ComponentBase):
         return fixed, unfixed
 
     @classmethod
-    def parseData(cls, data, format=None):
+    def parseData(cls, data: Any, format: Optional[str] = None) -> Optional["ContainerBase"]:
         """
         Parse a source of data that can either be a stream (file like object) or a string. Also,
         it can be in text or json formats.
@@ -94,11 +94,11 @@ class ContainerBase(ComponentBase):
             return cls.parseJSONData(data)
 
     @classmethod
-    def parseText(cls, data):
+    def parseText(cls, data: Any) -> Optional["ContainerBase"]:
         return cls.parseTextData(data)
 
     @classmethod
-    def parseTextData(cls, data):
+    def parseTextData(cls, data: Any) -> Optional["ContainerBase"]:
         if isinstance(data, str):
             data = StringIO(data)
         cal = cls(add_defaults=False)
@@ -107,9 +107,9 @@ class ContainerBase(ComponentBase):
         else:
             return None
 
-    def parse(self, ins):
+    def parse(self, ins: Any) -> bool:
 
-        result = False
+        result: bool = False
 
         self.setProperties({})
 
@@ -119,10 +119,10 @@ class ContainerBase(ComponentBase):
         state = LOOK_FOR_CONTAINER
 
         # Get lines looking for start of calendar
-        lines = [None, None]
-        comp = self
-        compend = None
-        componentstack = []
+        lines: List[Optional[str]] = [None, None]
+        comp: "ContainerBase" = self
+        compend: Optional[str] = None
+        componentstack: List[Tuple["ComponentBase", Optional[str]]] = []
 
         while readFoldedLine(ins, lines):
 
@@ -211,7 +211,7 @@ class ContainerBase(ComponentBase):
         return result
 
     @classmethod
-    def parseJSONData(cls, data):
+    def parseJSONData(cls, data: Any) -> Optional["ContainerBase"]:
         if not isinstance(data, str):
             data = data.read()
         try:
@@ -220,7 +220,7 @@ class ContainerBase(ComponentBase):
             raise InvalidData("JSON parse: {}".format(e), data)
         return cls.parseJSON(jobject, None, cls(add_defaults=False))
 
-    def getText(self, format=None):
+    def getText(self, format: Optional[str] = None) -> Optional[str]:
 
         if format is None or format == self.sFormatText:
             s = StringIO()
@@ -231,13 +231,13 @@ class ContainerBase(ComponentBase):
         else:
             return None
 
-    def getTextJSON(self):
-        jobject = []
+    def getTextJSON(self) -> str:
+        jobject: list = []
         self.writeJSON(jobject)
         return json.dumps(jobject[0], indent=2, separators=(',', ':'))
 
-    def addDefaultProperties(self):
+    def addDefaultProperties(self) -> None:
         raise NotImplementedError
 
-    def validProperty(self, prop):
+    def validProperty(self, prop: Any) -> bool:
         raise NotImplementedError

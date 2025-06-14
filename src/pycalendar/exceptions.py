@@ -17,11 +17,11 @@
 
 class ErrorBase(Exception):
 
-    def __init__(self, reason, data=""):
+    def __init__(self, reason: str, data: str = ""):
         self.mReason = reason
         self.mData = data
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "{}: {}".format(self.mReason, self.mData) if self.mData else self.mReason
 
 

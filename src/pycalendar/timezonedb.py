@@ -13,11 +13,9 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ##
-
-from pycalendar.exceptions import NoTimezoneInDatabase, \
-    InvalidData
+from typing import Any, ClassVar, Optional, Dict, Set
+from pycalendar.exceptions import NoTimezoneInDatabase, InvalidData
 import os
-
 
 class TimezoneDatabase(object):
     """
@@ -25,30 +23,36 @@ class TimezoneDatabase(object):
     TZID and caches the component data in a calendar from whence the actual component is returned.
     """
 
-    sTimezoneDatabase = None
+    sTimezoneDatabase: ClassVar[Optional["TimezoneDatabase"]] = None
+
+    dbpath: Optional[str]
+    calendar: Any
+    tzcache: Dict[str, Any]
+    stdtzcache: Set[str]
+    notstdtzcache: Set[str]
 
     @staticmethod
-    def createTimezoneDatabase(dbpath):
+    def createTimezoneDatabase(dbpath: str) -> None:
         TimezoneDatabase.sTimezoneDatabase = TimezoneDatabase()
         TimezoneDatabase.sTimezoneDatabase.setPath(dbpath)
 
     @staticmethod
-    def clearTimezoneDatabase():
+    def clearTimezoneDatabase() -> None:
         if TimezoneDatabase.sTimezoneDatabase is not None:
             TimezoneDatabase.sTimezoneDatabase.clear()
 
-    def __init__(self):
+    def __init__(self) -> None:
         from pycalendar.icalendar.calendar import Calendar
-        self.dbpath = None
-        self.calendar = Calendar()
-        self.tzcache = {}
-        self.stdtzcache = set()
-        self.notstdtzcache = set()
+        self.dbpath: Optional[str] = None
+        self.calendar: Any = Calendar()
+        self.tzcache: Dict[str, Any] = {}
+        self.stdtzcache: Set[str] = set()
+        self.notstdtzcache: Set[str] = set()
 
-    def setPath(self, dbpath):
+    def setPath(self, dbpath: str) -> None:
         self.dbpath = dbpath
 
-    def clear(self):
+    def clear(self) -> None:
         from pycalendar.icalendar.calendar import Calendar
         self.calendar = Calendar()
         self.tzcache.clear()
@@ -56,21 +60,20 @@ class TimezoneDatabase(object):
         self.notstdtzcache.clear()
 
     @staticmethod
-    def getTimezoneDatabase():
+    def getTimezoneDatabase() -> "TimezoneDatabase":
         if TimezoneDatabase.sTimezoneDatabase is None:
             TimezoneDatabase.sTimezoneDatabase = TimezoneDatabase()
         return TimezoneDatabase.sTimezoneDatabase
 
     @staticmethod
-    def getTimezone(tzid):
+    def getTimezone(tzid: str) -> Any:
         return TimezoneDatabase.getTimezoneDatabase()._getTimezone(tzid)
 
     @staticmethod
-    def getTimezoneInCalendar(tzid):
+    def getTimezoneInCalendar(tzid: str) -> Optional[Any]:
         """
         Return a VTIMEZONE inside a valid VCALENDAR
         """
-
         tz = TimezoneDatabase.getTimezone(tzid)
         if tz is not None:
             from pycalendar.icalendar.calendar import Calendar
@@ -81,8 +84,7 @@ class TimezoneDatabase(object):
             return None
 
     @staticmethod
-    def getTimezoneOffsetSeconds(tzid, dt, relative_to_utc=False):
-        # Cache it first
+    def getTimezoneOffsetSeconds(tzid: str, dt: Any, relative_to_utc: bool = False) -> int:
         tz = TimezoneDatabase.getTimezone(tzid)
         if tz is not None:
             return tz.getTimezoneOffsetSeconds(dt, relative_to_utc)
@@ -90,8 +92,7 @@ class TimezoneDatabase(object):
             return 0
 
     @staticmethod
-    def getTimezoneDescriptor(tzid, dt):
-        # Cache it first
+    def getTimezoneDescriptor(tzid: str, dt: Any) -> str:
         tz = TimezoneDatabase.getTimezone(tzid)
         if tz is not None:
             return tz.getTimezoneDescriptor(dt)
@@ -99,18 +100,14 @@ class TimezoneDatabase(object):
             return ""
 
     @staticmethod
-    def isStandardTimezone(tzid):
+    def isStandardTimezone(tzid: str) -> bool:
         return TimezoneDatabase.getTimezoneDatabase()._isStandardTimezone(tzid)
 
-    def cacheTimezone(self, tzid):
+    def cacheTimezone(self, tzid: str) -> None:
         """
         Load the specified timezone identifier's timezone data from a file and parse it
         into the L{Calendar} used to store timezones used by this object.
-
-        @param tzid: the timezone identifier to load
-        @type tzid: L{str}
         """
-
         if self.dbpath is None:
             return
 
@@ -125,40 +122,28 @@ class TimezoneDatabase(object):
         else:
             raise NoTimezoneInDatabase(self.dbpath, tzid)
 
-    def addTimezone(self, tz):
+    def addTimezone(self, tz: Any) -> None:
         """
         Add the specified VTIMEZONE component to this object's L{Calendar} cache. This component
         is assumed to be a non-standard timezone - i.e., not loaded from the timezone database.
-
-        @param tz: the VTIMEZONE component to add
-        @type tz: L{Component}
         """
         copy = tz.duplicate(self.calendar)
         self.calendar.addComponent(copy)
         self.tzcache[copy.getID()] = copy
 
-    def _addStandardTimezone(self, tz):
+    def _addStandardTimezone(self, tz: Any) -> None:
         """
         Same as L{addTimezone} except that the timezone is marked as a standard timezone. This
         is only meant to be used for testing which happens in the absence of a real standard
         timezone database.
-
-        @param tz: the VTIMEZONE component to add
-        @type tz: L{Component}
         """
         if tz.getID() not in self.tzcache:
             self.addTimezone(tz)
         self.stdtzcache.add(tz.getID())
 
-    def _isStandardTimezone(self, tzid):
+    def _isStandardTimezone(self, tzid: str) -> bool:
         """
         Check whether the specified time zone id corresponds to a standard time zone.
-
-        @param tzid: the time zone id to test
-        @type tzid: L{str}
-
-        @return: whether the timezone identifier is known
-        @rtype: L{bool}
         """
         if tzid in self.stdtzcache:
             return True
@@ -168,14 +153,11 @@ class TimezoneDatabase(object):
             self._getTimezone(tzid)
             return tzid in self.stdtzcache
 
-    def _getTimezone(self, tzid):
+    def _getTimezone(self, tzid: str) -> Any:
         """
         Get a timezone matching the specified timezone identifier. Use this object's
         cache - if not in the cache try to load it from a tz database file and store in
         this object's calendar.
-
-        @param tzid: the timezone identifier to lookup
-        @type tzid: L{str}
         """
         if tzid not in self.tzcache:
             tz = self.calendar.getTimezone(tzid)
@@ -190,29 +172,22 @@ class TimezoneDatabase(object):
                 self.stdtzcache.add(tzid)
             else:
                 self.notstdtzcache.add(tzid)
-
         return self.tzcache[tzid]
 
     @staticmethod
-    def mergeTimezones(cal, tzs):
+    def mergeTimezones(cal: Any, tzs: Any) -> None:
         """
         Merge each timezone from other calendar.
         """
-
         tzdb = TimezoneDatabase.getTimezoneDatabase()
-
-        # Not if our own calendar
         if cal is tzdb.calendar:
             return
-
-        # Merge each timezone from other calendar
         for tz in tzs:
             tzdb.mergeTimezone(tz)
 
-    def mergeTimezone(self, tz):
+    def mergeTimezone(self, tz: Any) -> None:
         """
         If the supplied VTIMEZONE is not in our cache then store it in memory.
         """
-
         if self._getTimezone(tz.getID()) is None:
             self.addTimezone(tz)

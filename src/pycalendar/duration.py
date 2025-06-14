@@ -14,19 +14,31 @@
 #    limitations under the License.
 ##
 
+from typing import Any, TextIO
 from pycalendar.parser import ParserContext
 from pycalendar.stringutils import strtoul
 from pycalendar.valueutils import ValueMixin
 
-
 class Duration(ValueMixin):
+    mForward: bool
+    mWeeks: int
+    mDays: int
+    mHours: int
+    mMinutes: int
+    mSeconds: int
 
-    def __init__(self, duration=None, weeks=0, days=0, hours=0, minutes=0, seconds=0):
+    def __init__(
+        self,
+        duration: Any = None,
+        weeks: int = 0,
+        days: int = 0,
+        hours: int = 0,
+        minutes: int = 0,
+        seconds: int = 0
+    ) -> None:
         self.mForward = True
-
         self.mWeeks = 0
         self.mDays = 0
-
         self.mHours = 0
         self.mMinutes = 0
         self.mSeconds = 0
@@ -35,147 +47,119 @@ class Duration(ValueMixin):
             duration = (((weeks * 7 + days) * 24 + hours) * 60 + minutes) * 60 + seconds
         self.setDuration(duration)
 
-    def duplicate(self):
+    def duplicate(self) -> "Duration":
         other = Duration(None)
         other.mForward = self.mForward
-
         other.mWeeks = self.mWeeks
         other.mDays = self.mDays
-
         other.mHours = self.mHours
         other.mMinutes = self.mMinutes
         other.mSeconds = self.mSeconds
-
         return other
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.getTotalSeconds())
 
-    def __eq__(self, comp):
+    def __eq__(self, comp: Any) -> bool:
         return self.getTotalSeconds() == comp.getTotalSeconds()
 
-    def __gt__(self, comp):
+    def __gt__(self, comp: Any) -> bool:
         return self.getTotalSeconds() > comp.getTotalSeconds()
 
-    def __lt__(self, comp):
+    def __lt__(self, comp: Any) -> bool:
         return self.getTotalSeconds() < comp.getTotalSeconds()
 
-    def getTotalSeconds(self):
-        return [1, -1][not self.mForward] \
-            * (self.mSeconds + (self.mMinutes + (self.mHours + (self.mDays + (self.mWeeks * 7)) * 24) * 60) * 60)
+    def getTotalSeconds(self) -> int:
+        return [1, -1][not self.mForward] * (
+            self.mSeconds + (self.mMinutes + (self.mHours + (self.mDays + (self.mWeeks * 7)) * 24) * 60) * 60
+        )
 
-    def setDuration(self, seconds):
+    def setDuration(self, seconds: int) -> None:
         self.mForward = seconds >= 0
 
         remainder = seconds
         if remainder < 0:
             remainder = -remainder
 
-        # Is it an exact number of weeks - if so use the weeks value, otherwise
-        # days, hours, minutes, seconds
         if remainder % (7 * 24 * 60 * 60) == 0:
-            self.mWeeks = remainder / (7 * 24 * 60 * 60)
+            self.mWeeks = remainder // (7 * 24 * 60 * 60)
             self.mDays = 0
-
             self.mHours = 0
             self.mMinutes = 0
             self.mSeconds = 0
         else:
             self.mSeconds = remainder % 60
             remainder -= self.mSeconds
-            remainder /= 60
+            remainder //= 60
 
             self.mMinutes = remainder % 60
             remainder -= self.mMinutes
-            remainder /= 60
+            remainder //= 60
 
             self.mHours = remainder % 24
             remainder -= self.mHours
-
-            self.mDays = remainder / 24
-
+            self.mDays = remainder // 24
             self.mWeeks = 0
 
-    def getForward(self):
+    def getForward(self) -> bool:
         return self.mForward
 
-    def getWeeks(self):
+    def getWeeks(self) -> int:
         return self.mWeeks
 
-    def getDays(self):
+    def getDays(self) -> int:
         return self.mDays
 
-    def getHours(self):
+    def getHours(self) -> int:
         return self.mHours
 
-    def getMinutes(self):
+    def getMinutes(self) -> int:
         return self.mMinutes
 
-    def getSeconds(self):
+    def getSeconds(self) -> int:
         return self.mSeconds
 
     @classmethod
-    def parseText(cls, data):
+    def parseText(cls, data: str) -> "Duration":
         dur = cls()
         dur.parse(data)
         return dur
 
-    def parse(self, data):
-        # parse format ([+]/-) "P" (dur-date / dur-time / dur-week)
-
+    def parse(self, data: str) -> None:
         try:
             offset = 0
             maxoffset = len(data)
-
-            # Look for +/-
             self.mForward = True
             if data[offset] in ('-', '+'):
                 self.mForward = data[offset] == '+'
                 offset += 1
 
-            # Must have a 'P'
             if data[offset] != "P":
                 raise ValueError("Duration: missing 'P'")
             offset += 1
 
-            # Look for time
             if data[offset] != "T":
-                # Must have a number
                 num, offset = strtoul(data, offset)
-
-                # Now look at character
                 if data[offset] == "W":
-                    # Have a number of weeks
                     self.mWeeks = num
                     offset += 1
-
-                    # There cannot be anything else after this so just exit
                     if offset != maxoffset:
                         if ParserContext.INVALID_DURATION_VALUE != ParserContext.PARSER_RAISE:
                             return
                         raise ValueError("Duration: extra data after 'W'")
                     return
                 elif data[offset] == "D":
-                    # Have a number of days
                     self.mDays = num
                     offset += 1
-
-                    # Look for more data - exit if none
                     if offset == maxoffset:
                         return
-
-                    # Look for time - exit if none
                     if data[offset] != "T":
                         raise ValueError("Duration: no 'T' after 'D'")
                 else:
-                    # Error in format
                     raise ValueError("Duration: need 'D' or 'W'")
 
-            # Have time
             offset += 1
 
-            # Strictly speaking T must always be followed by time values, but some clients
-            # send T with no additional text
             if offset == maxoffset:
                 if ParserContext.INVALID_DURATION_VALUE == ParserContext.PARSER_RAISE:
                     raise ValueError("Duration: need number after 'T'")
@@ -183,39 +167,23 @@ class Duration(ValueMixin):
                     return
             num, offset = strtoul(data, offset)
 
-            # Look for hour
             if data[offset] == "H":
-                # Get hours
                 self.mHours = num
                 offset += 1
-
-                # Look for more data - exit if none
                 if offset == maxoffset:
                     return
-
-                # Parse the next number
                 num, offset = strtoul(data, offset)
 
-            # Look for minute
             if data[offset] == "M":
-                # Get hours
                 self.mMinutes = num
                 offset += 1
-
-                # Look for more data - exit if none
                 if offset == maxoffset:
                     return
-
-                # Parse the next number
                 num, offset = strtoul(data, offset)
 
-            # Look for seconds
             if data[offset] == "S":
-                # Get hours
                 self.mSeconds = num
                 offset += 1
-
-                # No more data - exit
                 if offset == maxoffset:
                     return
 
@@ -224,7 +192,7 @@ class Duration(ValueMixin):
         except IndexError:
             raise ValueError("Duration: index error")
 
-    def generate(self, os):
+    def generate(self, os: TextIO) -> None:
         try:
             if not self.mForward and (self.mWeeks or self.mDays or self.mHours or self.mMinutes or self.mSeconds):
                 os.write("-")
@@ -249,14 +217,14 @@ class Duration(ValueMixin):
                         os.write("%dS" % (self.mSeconds,))
                 elif self.mDays == 0:
                     os.write("T0S")
-        except:
+        except Exception:
             pass
 
-    def writeXML(self, node, namespace):
+    def writeXML(self, node: Any, namespace: Any) -> None:
         node.text = self.getText()
 
-    def parseJSON(self, jobject):
+    def parseJSON(self, jobject: Any) -> None:
         self.parse(str(jobject))
 
-    def writeJSON(self, jobject):
+    def writeJSON(self, jobject: list) -> None:
         jobject.append(self.getText())

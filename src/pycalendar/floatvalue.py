@@ -16,45 +16,45 @@
 
 # iCalendar float value
 
+from typing import Any
 from pycalendar import xmldefinitions
 from pycalendar.value import Value
 
-
 class FloatValue(Value):
+    mValue: float
 
-    def __init__(self, value=None):
-        self.mValue = value if value is not None else 0.0
+    def __init__(self, value: float = None) -> None:
+        self.mValue: float = value if value is not None else 0.0
 
-    def duplicate(self):
+    def duplicate(self) -> "FloatValue":
         return FloatValue(self.mValue)
 
-    def getType(self):
+    def getType(self) -> int:
         return Value.VALUETYPE_FLOAT
 
-    def parse(self, data, variant):
+    def parse(self, data: Any, variant: Any) -> None:
         self.mValue = float(data)
 
-    # os - StringIO object
-    def generate(self, os):
+    def generate(self, os: Any) -> None:
         try:
             os.write(str(self.mValue))
-        except:
+        except Exception:
             pass
 
-    def writeXML(self, node, namespace):
+    def writeXML(self, node: Any, namespace: Any) -> None:
         value = self.getXMLNode(node, namespace)
         value.text = str(self.mValue)
 
-    def parseJSONValue(self, jobject):
+    def parseJSONValue(self, jobject: Any) -> None:
         self.mValue = float(jobject)
 
-    def writeJSONValue(self, jobject):
+    def writeJSONValue(self, jobject: list) -> None:
         jobject.append(self.mValue)
 
-    def getValue(self):
+    def getValue(self) -> float:
         return self.mValue
 
-    def setValue(self, value):
+    def setValue(self, value: float) -> None:
         self.mValue = value
 
 Value.registerType(Value.VALUETYPE_FLOAT, FloatValue, xmldefinitions.value_float)

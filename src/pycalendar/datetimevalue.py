@@ -14,24 +14,25 @@
 #    limitations under the License.
 ##
 
+from typing import Any
 from pycalendar import xmldefinitions
 from pycalendar.datetime import DateTime
 from pycalendar.value import Value
 from pycalendar.valueutils import WrapperValue
-
+import xml.etree.ElementTree as XML
 
 class DateTimeValue(WrapperValue, Value):
-
     _wrappedClass = DateTime
-    _wrappedType = None  # Depends on actual value
+    _wrappedType: Any = None  # Depends on actual value
+    mValue: DateTime
 
-    def getType(self):
+    def getType(self) -> int:
         return (Value.VALUETYPE_DATETIME, Value.VALUETYPE_DATE)[self.mValue.isDateOnly()]
 
-    def parse(self, data, variant):
+    def parse(self, data: str, variant: str) -> None:
         self.mValue.parse(data, fullISO=(variant == "vcard"))
 
-    def writeXML(self, node, namespace):
+    def writeXML(self, node: XML.Element, namespace: Any) -> None:
         self.mValue.writeXML(node, namespace)
 
 Value.registerType(Value.VALUETYPE_DATE, DateTimeValue, xmldefinitions.value_date)

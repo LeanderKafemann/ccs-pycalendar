@@ -14,75 +14,71 @@
 #    limitations under the License.
 ##
 
+from typing import Any, Dict, Optional, Tuple
 
 class OutputFilter(object):
+    mType: Any
+    mAllSubComponents: bool
+    mSubComponents: Optional[Dict[Any, "OutputFilter"]]
+    mAllProperties: bool
+    mProperties: Optional[Dict[Any, Any]]
 
-    def __init__(self, type):
+    def __init__(self, type: Any) -> None:
         self.mType = type
         self.mAllSubComponents = False
-        self.mSubComponents = None
+        self.mSubComponents: Optional[Dict[Any, "OutputFilter"]] = None
         self.mAllProperties = False
-        self.mProperties = None
+        self.mProperties: Optional[Dict[Any, Any]] = None
 
-    def getType(self):
+    def getType(self) -> Any:
         return self.mType
 
-    # Test to see if component type can be written out
-    def testComponent(self, oftype):
+    def testComponent(self, oftype: Any) -> bool:
         return self.mType == oftype
 
-    def isAllSubComponents(self):
+    def isAllSubComponents(self) -> bool:
         return self.mAllSubComponents
 
-    def setAllSubComponents(self):
+    def setAllSubComponents(self) -> None:
         self.mAllSubComponents = True
         self.mSubComponents = None
 
-    def addSubComponent(self, comp):
+    def addSubComponent(self, comp: "OutputFilter") -> None:
         if self.mSubComponents is None:
             self.mSubComponents = {}
-
         self.mSubComponents[comp.getType()] = comp
 
-    # Test to see if sub-component type can be written out
-    def testSubComponent(self, oftype):
-        return self.mAllSubComponents or (self.mSubComponents is not None) \
-            and oftype in self.mSubComponents
+    def testSubComponent(self, oftype: Any) -> bool:
+        return self.mAllSubComponents or (self.mSubComponents is not None and oftype in self.mSubComponents)
 
-    def hasSubComponentFilters(self):
+    def hasSubComponentFilters(self) -> bool:
         return self.mSubComponents is not None
 
-    def getSubComponentFilter(self, type):
+    def getSubComponentFilter(self, type: Any) -> Optional["OutputFilter"]:
         if self.mSubComponents is not None:
             return self.mSubComponents.get(type, None)
         else:
             return None
 
-    def isAllProperties(self):
+    def isAllProperties(self) -> bool:
         return self.mAllProperties
 
-    def setAllProperties(self):
+    def setAllProperties(self) -> None:
         self.mAllProperties = True
         self.mProperties = None
 
-    def addProperty(self, name, no_value):
+    def addProperty(self, name: Any, no_value: Any) -> None:
         if self.mProperties is None:
             self.mProperties = {}
-
         self.mProperties[name] = no_value
 
-    def hasPropertyFilters(self):
+    def hasPropertyFilters(self) -> bool:
         return self.mProperties is not None
 
-    # Test to see if property can be written out and also return whether
-    # the property value is used
-    def testPropertyValue(self, name):
-
+    def testPropertyValue(self, name: Any) -> Tuple[bool, Any]:
         if self.mAllProperties:
             return True, False
-
         if self.mProperties is None:
             return False, False
-
         result = self.mProperties.get(name, None)
         return result is not None, result

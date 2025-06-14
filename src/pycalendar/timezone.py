@@ -13,10 +13,9 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ##
-
+from typing import Any, ClassVar, Optional, Union
 from pycalendar import stringutils
 from pycalendar.timezonedb import TimezoneDatabase
-
 
 class Timezone(object):
     """
@@ -27,31 +26,34 @@ class Timezone(object):
     UTCOFFSET - when mUTC is False and tzid is an int
     """
 
-    sDefaultTimezone = None
-    UTCTimezone = None
+    sDefaultTimezone: ClassVar[Optional["Timezone"]] = None
+    UTCTimezone: ClassVar[Optional["Timezone"]] = None
 
-    def __init__(self, utc=None, tzid=None):
+    mUTC: bool
+    mTimezone: Union[str, int, None]
 
+    def __init__(self, utc: Optional[bool] = None, tzid: Optional[Union[str, int]] = None) -> None:
         if utc is not None:
             self.mUTC = utc
             self.mTimezone = tzid
         elif tzid is not None:
-            self.mUTC = tzid.lower() == 'utc'
-            self.mTimezone = None if tzid.lower() == 'utc' else tzid
+            if isinstance(tzid, str):
+                self.mUTC = tzid.lower() == 'utc'
+                self.mTimezone = None if tzid.lower() == 'utc' else tzid
+            else:
+                self.mUTC = False
+                self.mTimezone = tzid
         else:
             self.mUTC = True
             self.mTimezone = None
-
-            # Copy default timezone if it exists
             if Timezone.sDefaultTimezone is not None:
                 self.mUTC = Timezone.sDefaultTimezone.mUTC
                 self.mTimezone = Timezone.sDefaultTimezone.mTimezone
 
-    def duplicate(self):
+    def duplicate(self) -> "Timezone":
         return Timezone(self.mUTC, self.mTimezone)
 
-    def equals(self, comp):
-        # Always match if any one of them is 'floating'
+    def equals(self, comp: "Timezone") -> bool:
         if self.floating() or comp.floating():
             return True
         elif self.mUTC != comp.mUTC:
@@ -60,8 +62,7 @@ class Timezone(object):
             return self.mUTC or stringutils.compareStringsSafe(self.mTimezone, comp.mTimezone)
 
     @staticmethod
-    def same(utc1, tzid1, utc2, tzid2):
-        # Always match if any one of them is 'floating'
+    def same(utc1: bool, tzid1: Union[str, int, None], utc2: bool, tzid2: Union[str, int, None]) -> bool:
         if Timezone.is_float(utc1, tzid1) or Timezone.is_float(utc2, tzid2):
             return True
         elif utc1 != utc2:
@@ -70,28 +71,28 @@ class Timezone(object):
             return utc1 or stringutils.compareStringsSafe(tzid1, tzid2)
 
     @staticmethod
-    def is_float(utc, tzid):
+    def is_float(utc: bool, tzid: Union[str, int, None]) -> bool:
         return not utc and not tzid
 
-    def getUTC(self):
+    def getUTC(self) -> bool:
         return self.mUTC
 
-    def setUTC(self, utc):
+    def setUTC(self, utc: bool) -> None:
         self.mUTC = utc
 
-    def getTimezoneID(self):
+    def getTimezoneID(self) -> Union[str, int, None]:
         return self.mTimezone
 
-    def setTimezoneID(self, tzid):
+    def setTimezoneID(self, tzid: Union[str, int, None]) -> None:
         self.mTimezone = tzid
 
-    def floating(self):
+    def floating(self) -> bool:
         return not self.mUTC and self.mTimezone is None
 
-    def hasTZID(self):
+    def hasTZID(self) -> bool:
         return not self.mUTC and self.mTimezone is not None
 
-    def timeZoneSecondsOffset(self, dt, relative_to_utc=False):
+    def timeZoneSecondsOffset(self, dt: Any, relative_to_utc: bool = False) -> int:
         if self.mUTC:
             return 0
         elif self.mTimezone is None:
@@ -99,21 +100,19 @@ class Timezone(object):
         elif isinstance(self.mTimezone, int):
             return self.mTimezone
         else:
-            # Look up timezone and resolve date using default timezones
             return TimezoneDatabase.getTimezoneOffsetSeconds(self.mTimezone, dt, relative_to_utc)
 
-    def timeZoneDescriptor(self, dt):
+    def timeZoneDescriptor(self, dt: Any) -> str:
         if self.mUTC:
             return "(UTC)"
         elif self.mTimezone is None:
             return TimezoneDatabase.getTimezoneDescriptor(Timezone.sDefaultTimezone.getTimezoneID(), dt)
         elif isinstance(self.mTimezone, int):
             sign = "-" if self.mTimezone < 0 else "+"
-            hours = abs(self.mTimezone) / 3600
-            minutes = divmod(abs(self.mTimezone) / 60, 60)[1]
+            hours = abs(self.mTimezone) // 3600
+            minutes = divmod(abs(self.mTimezone) // 60, 60)[1]
             return "%s%02d%02d" % (sign, hours, minutes,)
         else:
-            # Look up timezone and resolve date using default timezones
             return TimezoneDatabase.getTimezoneDescriptor(self.mTimezone, dt)
 
 Timezone.sDefaultTimezone = Timezone()

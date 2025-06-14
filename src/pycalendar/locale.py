@@ -15,49 +15,36 @@
 ##
 
 
-LONG = 0
-SHORT = 1
-ABBREVIATED = 2
+from typing import List
 
-cLongDays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+LONG: int = 0
+SHORT: int = 1
+ABBREVIATED: int = 2
 
-cShortDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+cLongDays: List[str] = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+cShortDays: List[str] = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+cAbbrevDays: List[str] = ["S", "M", "T", "W", "T", "F", "S"]
 
-cAbbrevDays = ["S", "M", "T", "W", "T", "F", "S"]
+cLongMonths: List[str] = ["", "January", "February", "March", "April", "May", "June",
+                          "July", "August", "September", "October", "November", "December"]
+cShortMonths: List[str] = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                           "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+cAbbrevMonths: List[str] = ["", "J", "F", "M", "A", "M", "J",
+                            "J", "A", "S", "O", "N", "D"]
 
-cLongMonths = ["", "January", "February", "March", "April", "May", "June",
-               "July", "August", "September", "October", "November", "December"]
+s24HourTime: bool = False
+sDDMMDate: bool = False
 
-cShortMonths = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-
-cAbbrevMonths = ["", "J", "F", "M", "A", "M", "J",
-                 "J", "A", "S", "O", "N", "D"]
-
-s24HourTime = False
-sDDMMDate = False
-
-#     0..6 - Sunday - Saturday
-
-
-def getDay(day, strl):
+def getDay(day: int, strl: int) -> str:
     return {LONG: cLongDays[day], SHORT: cShortDays[day], ABBREVIATED: cAbbrevDays[day]}[strl]
 
-
-#     1..12 - January - December
-def getMonth(month, strl):
+def getMonth(month: int, strl: int) -> str:
     return {LONG: cLongMonths[month], SHORT: cShortMonths[month], ABBREVIATED: cAbbrevMonths[month]}[strl]
 
-
-#     Use 24 hour time display
-def use24HourTime():
-
+def use24HourTime() -> bool:
     # TODO: get 24 hour option from system prefs
     return s24HourTime
 
-
-#     Use DD/MM date display
-def useDDMMDate():
-
+def useDDMMDate() -> bool:
     # TODO: get 24 hour option from system prefs
     return sDDMMDate

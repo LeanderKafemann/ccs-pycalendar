@@ -13,20 +13,14 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ##
-
+from typing import Tuple, List, Any
 from hashlib import md5
 
-
-def strduptokenstr(txt, tokens):
-
-    # First punt over any leading space - this is not common so test the
-    # first character before trying the more expensive strip
+def strduptokenstr(txt: str, tokens: str) -> Tuple[str | None, str]:
     if txt[0] == " ":
         txt = txt.lstrip()
         if not txt:
             return None, ""
-
-    # Handle quoted string
     if txt[0] == '\"':
         skip = False
         for end, s in enumerate(txt[1:]):
@@ -45,12 +39,10 @@ def strduptokenstr(txt, tokens):
                 return txt[0:end], txt[end:]
         return txt, ""
 
-
-def strtoul(s, offset=0):
-
-    max = len(s)
+def strtoul(s: str, offset: int = 0) -> Tuple[int, int]:
+    maxlen = len(s)
     startoffset = offset
-    while offset < max:
+    while offset < maxlen:
         if s[offset] in "0123456789":
             offset += 1
             continue
@@ -64,8 +56,7 @@ def strtoul(s, offset=0):
         else:
             return int(s[startoffset:]), offset
 
-
-def strindexfind(s, ss, default_index):
+def strindexfind(s: str, ss: List[str], default_index: int) -> int:
     if s and ss:
         i = 0
         s = s.upper()
@@ -73,11 +64,9 @@ def strindexfind(s, ss, default_index):
             if s == ss[i]:
                 return i
             i += 1
-
     return default_index
 
-
-def strnindexfind(s, ss, default_index):
+def strnindexfind(s: str, ss: List[str], default_index: int) -> int:
     if s and ss:
         i = 0
         s = s.upper()
@@ -85,11 +74,9 @@ def strnindexfind(s, ss, default_index):
             if s.startswith(ss[i]):
                 return i
             i += 1
-
     return default_index
 
-
-def compareStringsSafe(s1, s2):
+def compareStringsSafe(s1: str | None, s2: str | None) -> bool:
     if s1 is None and s2 is None:
         return True
     elif (s1 is None and s2 is not None) or (s1 is not None and s2 is None):
@@ -97,6 +84,5 @@ def compareStringsSafe(s1, s2):
     else:
         return s1 == s2
 
-
-def md5digest(txt):
-    return md5.new(txt).hexdigest()
+def md5digest(txt: bytes) -> str:
+    return md5(txt).hexdigest()

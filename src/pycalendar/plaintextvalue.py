@@ -15,42 +15,40 @@
 ##
 
 # iCalendar generic text-like value
-
+from typing import Any
 from pycalendar.value import Value
 
-
 class PlainTextValue(Value):
+    mValue: str
 
-    def __init__(self, value=''):
+    def __init__(self, value: str = '') -> None:
         self.mValue = value
 
-    def duplicate(self):
+    def duplicate(self) -> "PlainTextValue":
         return self.__class__(self.mValue)
 
-    def parse(self, data, variant):
+    def parse(self, data: str, variant: Any) -> None:
         # No decoding required
         self.mValue = data
 
-    # os - StringIO object
-    def generate(self, os):
+    def generate(self, os: Any) -> None:
         try:
-            # No encoding required
             os.write(self.mValue)
-        except:
+        except Exception:
             pass
 
-    def writeXML(self, node, namespace):
+    def writeXML(self, node: Any, namespace: Any) -> None:
         value = self.getXMLNode(node, namespace)
         value.text = self.mValue
 
-    def parseJSONValue(self, jobject):
+    def parseJSONValue(self, jobject: Any) -> None:
         self.mValue = jobject.encode("utf-8")
 
-    def writeJSONValue(self, jobject):
+    def writeJSONValue(self, jobject: list) -> None:
         jobject.append(self.mValue)
 
-    def getValue(self):
+    def getValue(self) -> str:
         return self.mValue
 
-    def setValue(self, value):
+    def setValue(self, value: str) -> None:
         self.mValue = value
