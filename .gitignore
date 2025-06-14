@@ -1,2 +1,4 @@
 .vs/*
 src/pycalendar.egg-info/*
+dist/*
+old/*
