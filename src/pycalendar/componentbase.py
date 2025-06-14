@@ -1,50 +1,42 @@
-##
-#    Copyright (c) 2007-2013 Cyrus Daboo. All rights reserved.
-#
-#    Licensed under the Apache License, Version 2.0 (the "License");
-#    you may not use this file except in compliance with the License.
-#    You may obtain a copy of the License at
-#
-#        http://www.apache.org/licenses/LICENSE-2.0
-#
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS,
-#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    See the License for the specific language governing permissions and
-#    limitations under the License.
-##
-
-from cStringIO import StringIO
+from io import StringIO
 from pycalendar import xmldefinitions, xmlutils
 from pycalendar.datetimevalue import DateTimeValue
 from pycalendar.periodvalue import PeriodValue
 from pycalendar.value import Value
 import xml.etree.cElementTree as XML
 from pycalendar.exceptions import InvalidComponent, ErrorBase
-
+from typing import (
+    Self, Optional, Any, Callable, Dict, List, Tuple, Union
+)
 
 class ComponentBase(object):
+    propertyCardinality_1: Tuple[str, ...] = ()
+    propertyCardinality_1_Fix_Empty: Tuple[str, ...] = ()
+    propertyCardinality_0_1: Tuple[str, ...] = ()
+    propertyCardinality_1_More: Tuple[str, ...] = ()
 
-    # These are class attributes for sets of properties for testing cardinality constraints. The sets
-    # must contain property names.
-    propertyCardinality_1 = ()           # Must be present
-    propertyCardinality_1_Fix_Empty = ()  # Must be present but can be fixed by adding an empty value
-    propertyCardinality_0_1 = ()         # 0 or 1 only
-    propertyCardinality_1_More = ()      # 1 or more
+    propertyValueChecks: Optional[Dict[str, Callable[[Any], bool]]] = None
 
-    propertyValueChecks = None  # Either iCalendar or vCard validation
+    sortSubComponents: bool = True
 
-    sortSubComponents = True
+    sComponentType: Any = None
+    sPropertyType: Any = None
 
-    sComponentType = None
-    sPropertyType = None
+    mParentComponent: Optional["ComponentBase"]
+    mComponents: List["ComponentBase"]
+    mProperties: Dict[str, List[Any]]
+    cardinalityChecks: Tuple[
+        Callable[[List[str], List[str], bool], None],
+        Callable[[List[str], List[str], bool], None],
+        Callable[[List[str], List[str], bool], None],
+        Callable[[List[str], List[str], bool], None],
+    ]
 
-    def __init__(self, parent=None):
-        self.mParentComponent = parent
-        self.mComponents = []
-        self.mProperties = {}
+    def __init__(self, parent: Optional["ComponentBase"] = None) -> None:
+        self.mParentComponent: Optional["ComponentBase"] = parent
+        self.mComponents: List["ComponentBase"] = []
+        self.mProperties: Dict[str, List[Any]] = {}
 
-        # This is the set of checks we do by default for components
         self.cardinalityChecks = (
             self.check_cardinality_1,
             self.check_cardinality_1_Fix_Empty,
@@ -52,50 +44,51 @@ class ComponentBase(object):
             self.check_cardinality_1_More,
         )
 
-    def duplicate(self, **args):
+    def duplicate(self, **args) -> Self:
         other = self.__class__(**args)
-
         for component in self.mComponents:
             other.addComponent(component.duplicate(parent=other))
-
         other.mProperties = {}
-        for propname, props in self.mProperties.iteritems():
+        for propname, props in self.mProperties.items():
             other.mProperties[propname] = [i.duplicate() for i in props]
         return other
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.getText()
 
-    def __ne__(self, other):
+    def __ne__(self, other: object) -> bool:
         return not self.__eq__(other)
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, ComponentBase):
             return False
-        return self.getType() == other.getType() and self.compareProperties(other) and self.compareComponents(other)
+        return (
+            self.getType() == other.getType()
+            and self.compareProperties(other)
+            and self.compareComponents(other)
+        )
 
-    def getType(self):
+    def getType(self) -> str:
         raise NotImplementedError
 
-    def getBeginDelimiter(self):
+    def getBeginDelimiter(self) -> str:
         return "BEGIN:" + self.getType()
 
-    def getEndDelimiter(self):
+    def getEndDelimiter(self) -> str:
         return "END:" + self.getType()
 
-    def getSortKey(self):
+    def getSortKey(self) -> str:
         return ""
 
-    def getParentComponent(self):
+    def getParentComponent(self) -> Optional["ComponentBase"]:
         return self.mParentComponent
 
-    def setParentComponent(self, parent):
+    def setParentComponent(self, parent: Optional["ComponentBase"]) -> None:
         self.mParentComponent = parent
 
-    def compareComponents(self, other):
+    def compareComponents(self, other: "ComponentBase") -> bool:
         mine = set(self.mComponents)
         theirs = set(other.mComponents)
-
         for item in mine:
             for another in theirs:
                 if item == another:
@@ -105,37 +98,39 @@ class ComponentBase(object):
                 return False
         return len(theirs) == 0
 
-    def getComponents(self, compname=None):
+    def getComponents(self, compname: Optional[str] = None) -> List["ComponentBase"]:
         compname = compname.upper() if compname else None
-        return [component for component in self.mComponents if compname is None or component.getType().upper() == compname]
+        return [
+            component
+            for component in self.mComponents
+            if compname is None or component.getType().upper() == compname
+        ]
 
-    def getComponentByKey(self, key):
+    def getComponentByKey(self, key: Any) -> Optional["ComponentBase"]:
         for component in self.mComponents:
             if component.getMapKey() == key:
                 return component
-        else:
-            return None
+        return None
 
-    def removeComponentByKey(self, key):
-
+    def removeComponentByKey(self, key: Any) -> None:
         for component in self.mComponents:
             if component.getMapKey() == key:
                 self.removeComponent(component)
                 return
 
-    def addComponent(self, component):
+    def addComponent(self, component: "ComponentBase") -> None:
         self.mComponents.append(component)
 
-    def hasComponent(self, compname):
+    def hasComponent(self, compname: str) -> bool:
         return self.countComponents(compname) != 0
 
-    def countComponents(self, compname):
+    def countComponents(self, compname: str) -> int:
         return len(self.getComponents(compname))
 
-    def removeComponent(self, component):
+    def removeComponent(self, component: "ComponentBase") -> None:
         self.mComponents.remove(component)
 
-    def removeAllComponent(self, compname=None):
+    def removeAllComponent(self, compname: Optional[str] = None) -> None:
         if compname:
             compname = compname.upper()
             for component in tuple(self.mComponents):
@@ -144,10 +139,10 @@ class ComponentBase(object):
         else:
             self.mComponents = []
 
-    def sortedComponentNames(self):
+    def sortedComponentNames(self) -> Tuple[str, ...]:
         return ()
 
-    def compareProperties(self, other):
+    def compareProperties(self, other: "ComponentBase") -> bool:
         mine = set()
         for props in self.mProperties.values():
             mine.update(props)
@@ -156,92 +151,78 @@ class ComponentBase(object):
             theirs.update(props)
         return mine == theirs
 
-    def getProperties(self, propname=None):
+    def getProperties(self, propname: Optional[str] = None) -> Union[Dict[str, List[Any]], List[Any]]:
         return self.mProperties.get(propname.upper(), []) if propname else self.mProperties
 
-    def setProperties(self, props):
+    def setProperties(self, props: Dict[str, List[Any]]) -> None:
         self.mProperties = props
 
-    def addProperty(self, prop):
+    def addProperty(self, prop: Any) -> None:
         self.mProperties.setdefault(prop.getName().upper(), []).append(prop)
 
-    def hasProperty(self, propname):
+    def hasProperty(self, propname: str) -> bool:
         return propname.upper() in self.mProperties
 
-    def countProperty(self, propname):
+    def countProperty(self, propname: str) -> int:
         return len(self.mProperties.get(propname.upper(), []))
 
-    def findFirstProperty(self, propname):
+    def findFirstProperty(self, propname: str) -> Optional[Any]:
         return self.mProperties.get(propname.upper(), [None])[0]
 
-    def removeProperty(self, prop):
-        if prop.getName().upper() in self.mProperties:
-            self.mProperties[prop.getName().upper()].remove(prop)
-            if len(self.mProperties[prop.getName().upper()]) == 0:
-                del self.mProperties[prop.getName().upper()]
+    def removeProperty(self, prop: Any) -> None:
+        key = prop.getName().upper()
+        if key in self.mProperties:
+            self.mProperties[key].remove(prop)
+            if len(self.mProperties[key]) == 0:
+                del self.mProperties[key]
 
-    def removeProperties(self, propname):
+    def removeProperties(self, propname: str) -> None:
         if propname.upper() in self.mProperties:
             del self.mProperties[propname.upper()]
 
-    def getPropertyInteger(self, prop, type=None):
+    def getPropertyInteger(self, prop: str, type: Optional[Any] = None) -> Optional[int]:
         return self.loadValueInteger(prop, type)
 
-    def getPropertyString(self, prop):
+    def getPropertyString(self, prop: str) -> Optional[str]:
         return self.loadValueString(prop)
 
-    def getProperty(self, prop, value):
+    def getProperty(self, prop: str, value: Any) -> Any:
         return self.loadValue(prop, value)
 
-    def finalise(self):
+    def finalise(self) -> None:
         raise NotImplemented
 
-    def validate(self, doFix=False):
-        """
-        Validate the data in this component and optionally fix any problems. Return
-        a tuple containing two lists: the first describes problems that were fixed, the
-        second problems that were not fixed. Caller can then decide what to do with unfixed
-        issues.
-        """
-
-        fixed = []
-        unfixed = []
-
-        # Cardinality tests
+    def validate(self, doFix: bool = False) -> Tuple[List[str], List[str]]:
+        fixed: List[str] = []
+        unfixed: List[str] = []
         for check in self.cardinalityChecks:
             check(fixed, unfixed, doFix)
-
-        # Value constraints - these tests come from class specific attributes
         if self.propertyValueChecks is not None:
             for properties in self.mProperties.values():
                 for property in properties:
                     propname = property.getName().upper()
                     if propname in self.propertyValueChecks:
                         if not self.propertyValueChecks[propname](property):
-                            # Cannot fix a bad property value
                             logProblem = "[%s] Property value incorrect: %s" % (self.getType(), propname,)
                             unfixed.append(logProblem)
-
-        # Validate all subcomponents
         for component in self.mComponents:
             morefixed, moreunfixed = component.validate(doFix)
             fixed.extend(morefixed)
             unfixed.extend(moreunfixed)
-
         return fixed, unfixed
 
-    def check_cardinality_1(self, fixed, unfixed, doFix):
+    def check_cardinality_1(self, fixed: List[str], unfixed: List[str], doFix: bool) -> None:
         for propname in self.propertyCardinality_1:
-            if self.countProperty(propname) != 1:  # Cannot fix a missing required property
+            if self.countProperty(propname) != 1:
                 logProblem = "[%s] Missing or too many required property: %s" % (self.getType(), propname)
                 unfixed.append(logProblem)
 
-    def check_cardinality_1_Fix_Empty(self, fixed, unfixed, doFix):
+    def check_cardinality_1_Fix_Empty(self, fixed: List[str], unfixed: List[str], doFix: bool) -> None:
         for propname in self.propertyCardinality_1_Fix_Empty:
-            if self.countProperty(propname) > 1:  # Cannot fix too many required property
+            if self.countProperty(propname) > 1:
                 logProblem = "[%s] Too many required property: %s" % (self.getType(), propname)
                 unfixed.append(logProblem)
-            elif self.countProperty(propname) == 0:  # Possibly fix by adding empty property
+            elif self.countProperty(propname) == 0:
                 logProblem = "[%s] Missing required property: %s" % (self.getType(), propname)
                 if doFix:
                     self.addProperty(self.sPropertyType(propname, ""))
@@ -249,86 +230,51 @@ class ComponentBase(object):
                 else:
                     unfixed.append(logProblem)
 
-    def check_cardinality_0_1(self, fixed, unfixed, doFix):
+    def check_cardinality_0_1(self, fixed: List[str], unfixed: List[str], doFix: bool) -> None:
         for propname in self.propertyCardinality_0_1:
-            if self.countProperty(propname) > 1:  # Cannot be fixed - no idea which one to delete
+            if self.countProperty(propname) > 1:
                 logProblem = "[%s] Too many properties present: %s" % (self.getType(), propname)
                 unfixed.append(logProblem)
 
-    def check_cardinality_1_More(self, fixed, unfixed, doFix):
+    def check_cardinality_1_More(self, fixed: List[str], unfixed: List[str], doFix: bool) -> None:
         for propname in self.propertyCardinality_1_More:
-            if not self.countProperty(propname) > 0:  # Cannot fix a missing required property
+            if not self.countProperty(propname) > 0:
                 logProblem = "[%s] Missing required property: %s" % (self.getType(), propname)
                 unfixed.append(logProblem)
 
-    def getText(self):
+    def getText(self) -> str:
         s = StringIO()
         self.generate(s)
         return s.getvalue()
 
-    def generate(self, os):
-        # Header
+    def generate(self, os: Any) -> None:
         os.write(self.getBeginDelimiter())
         os.write("\r\n")
-
-        # Write each property
         self.writeProperties(os)
-
-        # Write each embedded component based on specific order
         self.writeComponents(os)
-
-        # Footer
         os.write(self.getEndDelimiter())
         os.write("\r\n")
 
-    def generateFiltered(self, os, filter):
-        # Header
+    def generateFiltered(self, os: Any, filter: Any) -> None:
         os.write(self.getBeginDelimiter())
         os.write("\r\n")
-
-        # Write each property
         self.writePropertiesFiltered(os, filter)
-
-        # Write each embedded component based on specific order
         self.writeComponentsFiltered(os, filter)
-
-        # Footer
         os.write(self.getEndDelimiter())
         os.write("\r\n")
 
-    def writeXML(self, node, namespace):
-
-        # Component element
+    def writeXML(self, node: Any, namespace: Any) -> None:
         comp = XML.SubElement(node, xmlutils.makeTag(namespace, self.getType()))
-
-        # Each property
         self.writePropertiesXML(comp, namespace)
-
-        # Each component
         self.writeComponentsXML(comp, namespace)
 
-    def writeXMLFiltered(self, node, namespace, filter):
-        # Component element
+    def writeXMLFiltered(self, node: Any, namespace: Any, filter: Any) -> None:
         comp = XML.SubElement(node, xmlutils.makeTag(namespace, self.getType()))
-
-        # Each property
         self.writePropertiesFilteredXML(comp, namespace, filter)
-
-        # Each component
         self.writeComponentsFilteredXML(comp, namespace, filter)
 
     @classmethod
-    def parseJSON(cls, jobject, parent, comp=None):
-        """
-        Parse the JSON object which has the form:
-
-        [name, properties, subcomponents]
-
-        @param jobject: a JSON array
-        @type jobject: C{list}
-        """
-        # [name, properties, subcomponents]
-
+    def parseJSON(cls, jobject: list, parent: Any, comp: Optional[Any] = None) -> Any:
         try:
             if comp is None:
                 comp = cls.sComponentType.makeComponent(jobject[0].upper(), parent)
@@ -343,41 +289,23 @@ class ComponentBase(object):
         except Exception as e:
             raise InvalidComponent("Invalid component: {}".format(e), jobject)
 
-    def writeJSON(self, jobject):
-
-        # Component element
+    def writeJSON(self, jobject: list) -> None:
         comp = [self.getType().lower(), [], []]
-
-        # Each property
         self.writePropertiesJSON(comp[1])
-
-        # Each component
         self.writeComponentsJSON(comp[2])
-
         jobject.append(comp)
 
-    def writeJSONFiltered(self, jobject, filter):
-        # Component element
+    def writeJSONFiltered(self, jobject: list, filter: Any) -> None:
         comp = [self.getType().lower(), [], []]
-
-        # Each property
         self.writePropertiesFilteredJSON(comp[1], filter)
-
-        # Each component
         self.writeComponentsFilteredJSON(comp[2], filter)
-
         jobject.append(comp)
 
-    def sortedComponents(self):
-
+    def sortedComponents(self) -> List["ComponentBase"]:
         components = self.mComponents[:]
-        sortedcomponents = []
-
-        # Write each component based on specific order
+        sortedcomponents: List["ComponentBase"] = []
         orderedNames = self.sortedComponentNames()
         for name in orderedNames:
-
-            # Group by name then sort by map key (UID/R-ID)
             namedcomponents = []
             for component in tuple(components):
                 if component.getType().upper() == name:
@@ -385,25 +313,19 @@ class ComponentBase(object):
                     components.remove(component)
             for component in sorted(namedcomponents, key=lambda x: x.getSortKey()):
                 sortedcomponents.append(component)
-
-        # Write out the remainder sorted by name, sortKey
         if self.sortSubComponents:
             remainder = sorted(components, key=lambda x: (x.getType().upper(), x.getSortKey(),))
         else:
             remainder = components
         for component in remainder:
             sortedcomponents.append(component)
-
         return sortedcomponents
 
-    def writeComponents(self, os):
-
-        # Write out the remainder
+    def writeComponents(self, os: Any) -> None:
         for component in self.sortedComponents():
             component.generate(os)
 
-    def writeComponentsFiltered(self, os, filter):
-        # Shortcut for all sub-components
+    def writeComponentsFiltered(self, os: Any, filter: Any) -> None:
         if filter.isAllSubComponents():
             self.writeComponents(os)
         elif filter.hasSubComponentFilters():
@@ -412,21 +334,15 @@ class ComponentBase(object):
                 if subfilter is not None:
                     subcomp.generateFiltered(os, subfilter)
 
-    def writeComponentsXML(self, node, namespace):
-
+    def writeComponentsXML(self, node: Any, namespace: Any) -> None:
         if self.mComponents:
             comps = XML.SubElement(node, xmlutils.makeTag(namespace, xmldefinitions.components))
-
-            # Write out the remainder
             for component in self.sortedComponents():
                 component.writeXML(comps, namespace)
 
-    def writeComponentsFilteredXML(self, node, namespace, filter):
-
+    def writeComponentsFilteredXML(self, node: Any, namespace: Any, filter: Any) -> None:
         if self.mComponents:
             comps = XML.SubElement(node, xmlutils.makeTag(namespace, xmldefinitions.components))
-
-            # Shortcut for all sub-components
             if filter.isAllSubComponents():
                 self.writeXML(comps, namespace)
             elif filter.hasSubComponentFilters():
@@ -435,17 +351,13 @@ class ComponentBase(object):
                     if subfilter is not None:
                         subcomp.writeXMLFiltered(comps, namespace, subfilter)
 
-    def writeComponentsJSON(self, jobject):
-
+    def writeComponentsJSON(self, jobject: list) -> None:
         if self.mComponents:
-            # Write out the remainder
             for component in self.sortedComponents():
                 component.writeJSON(jobject)
 
-    def writeComponentsFilteredJSON(self, jobject, filter):
-
+    def writeComponentsFilteredJSON(self, jobject: list, filter: Any) -> None:
         if self.mComponents:
-            # Shortcut for all sub-components
             if filter.isAllSubComponents():
                 self.writeJSON(jobject)
             elif filter.hasSubComponentFilters():
@@ -454,13 +366,12 @@ class ComponentBase(object):
                     if subfilter is not None:
                         subcomp.writeJSONFiltered(jobject, subfilter)
 
-    def loadValue(self, value_name):
+    def loadValue(self, value_name: str) -> Optional[Any]:
         if self.hasProperty(value_name):
             return self.findFirstProperty(value_name)
-
         return None
 
-    def loadValueInteger(self, value_name, type=None):
+    def loadValueInteger(self, value_name: str, type: Optional[Any] = None) -> Optional[int]:
         if type:
             if self.hasProperty(value_name):
                 if type == Value.VALUETYPE_INTEGER:
@@ -469,52 +380,46 @@ class ComponentBase(object):
                         return ivalue.getValue()
                 elif type == Value.VALUETYPE_UTC_OFFSET:
                     uvalue = self.findFirstProperty(value_name).getUTCOffsetValue()
-                    if (uvalue is not None):
+                    if uvalue is not None:
                         return uvalue.getValue()
-
             return None
         else:
             return self.loadValueInteger(value_name, Value.VALUETYPE_INTEGER)
 
-    def loadValueString(self, value_name):
+    def loadValueString(self, value_name: str) -> Optional[str]:
         if self.hasProperty(value_name):
             tvalue = self.findFirstProperty(value_name).getTextValue()
-            if (tvalue is not None):
+            if tvalue is not None:
                 return tvalue.getValue()
-
         return None
 
-    def loadValueDateTime(self, value_name):
+    def loadValueDateTime(self, value_name: str) -> Optional[Any]:
         if self.hasProperty(value_name):
             dtvalue = self.findFirstProperty(value_name).getDateTimeValue()
             if dtvalue is not None:
                 return dtvalue.getValue()
-
         return None
 
-    def loadValueDuration(self, value_name):
+    def loadValueDuration(self, value_name: str) -> Optional[Any]:
         if self.hasProperty(value_name):
             dvalue = self.findFirstProperty(value_name).getDurationValue()
-            if (dvalue is not None):
+            if dvalue is not None:
                 return dvalue.getValue()
-
         return None
 
-    def loadValuePeriod(self, value_name):
+    def loadValuePeriod(self, value_name: str) -> Optional[Any]:
         if self.hasProperty(value_name):
             pvalue = self.findFirstProperty(value_name).getPeriodValue()
-            if (pvalue is not None):
+            if pvalue is not None:
                 return pvalue.getValue()
-
         return None
 
-    def loadValueRRULE(self, value_name, value, add):
-        # Get RRULEs
+    def loadValueRRULE(self, value_name: str, value: Any, add: bool) -> bool:
         if self.hasProperty(value_name):
             items = self.getProperties()[value_name]
             for iter in items:
                 rvalue = iter.getRecurrenceValue()
-                if (rvalue is not None):
+                if rvalue is not None:
                     if add:
                         value.addRule(rvalue.getValue())
                     else:
@@ -523,14 +428,12 @@ class ComponentBase(object):
         else:
             return False
 
-    def loadValueRDATE(self, value_name, value, add):
-        # Get RDATEs
+    def loadValueRDATE(self, value_name: str, value: Any, add: bool) -> bool:
         if self.hasProperty(value_name):
             for iter in self.getProperties(value_name):
                 mvalue = iter.getMultiValue()
-                if (mvalue is not None):
+                if mvalue is not None:
                     for obj in mvalue.getValues():
-                        # cast to date-time
                         if isinstance(obj, DateTimeValue):
                             if add:
                                 value.addDT(obj.getValue())
@@ -541,16 +444,14 @@ class ComponentBase(object):
                                 value.addPeriod(obj.getValue().getStart())
                             else:
                                 value.subtractPeriod(obj.getValue().getStart())
-
             return True
         else:
             return False
 
-    def sortedPropertyKeys(self):
-        keys = self.mProperties.keys()
+    def sortedPropertyKeys(self) -> List[str]:
+        keys = list(self.mProperties.keys())
         keys.sort()
-
-        results = []
+        results: List[str] = []
         for skey in self.sortedPropertyKeyOrder():
             if skey in keys:
                 results.append(skey)
@@ -558,23 +459,18 @@ class ComponentBase(object):
         results.extend(keys)
         return results
 
-    def sortedPropertyKeyOrder(self):
+    def sortedPropertyKeyOrder(self) -> Tuple[str, ...]:
         return ()
 
-    def writeProperties(self, os):
-        # Sort properties by name
+    def writeProperties(self, os: Any) -> None:
         keys = self.sortedPropertyKeys()
         for key in keys:
             props = self.mProperties[key]
             for prop in props:
                 prop.generate(os)
 
-    def writePropertiesFiltered(self, os, filter):
-
-        # Sort properties by name
+    def writePropertiesFiltered(self, os: Any, filter: Any) -> None:
         keys = self.sortedPropertyKeys()
-
-        # Shortcut for all properties
         if filter.isAllProperties():
             for key in keys:
                 for prop in self.getProperties(key):
@@ -584,25 +480,17 @@ class ComponentBase(object):
                 for prop in self.getProperties(key):
                     prop.generateFiltered(os, filter)
 
-    def writePropertiesXML(self, node, namespace):
-
+    def writePropertiesXML(self, node: Any, namespace: Any) -> None:
         properties = XML.SubElement(node, xmlutils.makeTag(namespace, xmldefinitions.properties))
-
-        # Sort properties by name
         keys = self.sortedPropertyKeys()
         for key in keys:
             props = self.mProperties[key]
             for prop in props:
                 prop.writeXML(properties, namespace)
 
-    def writePropertiesFilteredXML(self, node, namespace, filter):
-
+    def writePropertiesFilteredXML(self, node: Any, namespace: Any, filter: Any) -> None:
         props = XML.SubElement(node, xmlutils.makeTag(namespace, xmldefinitions.properties))
-
-        # Sort properties by name
         keys = self.sortedPropertyKeys()
-
-        # Shortcut for all properties
         if filter.isAllProperties():
             for key in keys:
                 for prop in self.getProperties(key):
@@ -612,21 +500,15 @@ class ComponentBase(object):
                 for prop in self.getProperties(key):
                     prop.writeXMLFiltered(props, namespace, filter)
 
-    def writePropertiesJSON(self, jobject):
-
-        # Sort properties by name
+    def writePropertiesJSON(self, jobject: list) -> None:
         keys = self.sortedPropertyKeys()
         for key in keys:
             props = self.mProperties[key]
             for prop in props:
                 prop.writeJSON(jobject)
 
-    def writePropertiesFilteredJSON(self, jobject, filter):
-
-        # Sort properties by name
+    def writePropertiesFilteredJSON(self, jobject: list, filter: Any) -> None:
         keys = self.sortedPropertyKeys()
-
-        # Shortcut for all properties
         if filter.isAllProperties():
             for key in keys:
                 for prop in self.getProperties(key):
@@ -636,23 +518,17 @@ class ComponentBase(object):
                 for prop in self.getProperties(key):
                     prop.writeJSONFiltered(jobject, filter)
 
-    def loadPrivateValue(self, value_name):
-        # Read it in from properties list and then delete the property from the
-        # main list
+    def loadPrivateValue(self, value_name: str) -> Optional[str]:
         result = self.loadValueString(value_name)
-        if (result is not None):
+        if result is not None:
             self.removeProperties(value_name)
         return result
 
-    def writePrivateProperty(self, os, key, value):
+    def writePrivateProperty(self, os: Any, key: str, value: Any) -> None:
         prop = self.sPropertyType(name=key, value=value)
         prop.generate(os)
 
-    def editProperty(self, propname, propvalue):
-
-        # Remove existing items
+    def editProperty(self, propname: str, propvalue: Any) -> None:
         self.removeProperties(propname)
-
-        # Now create properties
         if propvalue:
             self.addProperty(self.sPropertyType(name=propname, value=propvalue))

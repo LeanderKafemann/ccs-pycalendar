@@ -40,7 +40,7 @@ class CalendarManager(object):
             temp = Timezone(utc=False, tzid=tzid)
             self.setDefaultTimezone(temp)
 
-    def setDefaultTimezone(self, tzid):
+    def setDefaultTimezone(self, tzid: str):
         Timezone.sDefaultTimezone = tzid
 
     def getDefaultTimezoneID(self):
@@ -49,7 +49,7 @@ class CalendarManager(object):
         else:
             return Timezone.sDefaultTimezone.getTimezoneID()
 
-    def getDefaultTimezone(self):
+    def getDefaultTimezone(self) -> Timezone:
         return Timezone.sDefaultTimezone
 
 CalendarManager.sICalendarManager = CalendarManager()
