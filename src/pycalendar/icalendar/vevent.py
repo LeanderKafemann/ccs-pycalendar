@@ -13,7 +13,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ##
-
+from typing import Any, List, Tuple, Optional
 from pycalendar.icalendar import definitions
 from pycalendar.icalendar import itipdefinitions
 from pycalendar.icalendar.component import Component
@@ -21,15 +21,13 @@ from pycalendar.icalendar.componentrecur import ComponentRecur
 from pycalendar.icalendar.property import Property
 from pycalendar.icalendar.validation import ICALENDAR_VALUE_CHECKS
 
-
 class VEvent(ComponentRecur):
-
-    propertyCardinality_1 = (
+    propertyCardinality_1: Tuple[str, ...] = (
         definitions.cICalProperty_DTSTAMP,
         definitions.cICalProperty_UID,
     )
 
-    propertyCardinality_0_1 = (
+    propertyCardinality_0_1: Tuple[str, ...] = (
         definitions.cICalProperty_CLASS,
         definitions.cICalProperty_CREATED,
         definitions.cICalProperty_DESCRIPTION,
@@ -49,40 +47,39 @@ class VEvent(ComponentRecur):
         definitions.cICalProperty_DURATION,
     )
 
-    propertyValueChecks = ICALENDAR_VALUE_CHECKS
+    propertyValueChecks: Any = ICALENDAR_VALUE_CHECKS
 
-    def __init__(self, parent=None):
-        super(VEvent, self).__init__(parent=parent)
+    mStatus: int
+
+    def __init__(self, parent: Any = None) -> None:
+        super().__init__(parent=parent)
         self.mStatus = definitions.eStatus_VEvent_None
 
-    def duplicate(self, parent=None):
-        other = super(VEvent, self).duplicate(parent=parent)
+    def duplicate(self, parent: Any = None) -> "VEvent":
+        other = super().duplicate(parent=parent)
         other.mStatus = self.mStatus
         return other
 
-    def getType(self):
+    def getType(self) -> str:
         return definitions.cICalComponent_VEVENT
 
-    def getMimeComponentName(self):
+    def getMimeComponentName(self) -> str:
         return itipdefinitions.cICalMIMEComponent_VEVENT
 
-    def addComponent(self, comp):
-        # We can embed the alarm components only
+    def addComponent(self, comp: Any) -> None:
         if comp.getType() == definitions.cICalComponent_VALARM:
-            super(VEvent, self).addComponent(comp)
+            super().addComponent(comp)
         else:
             raise ValueError("Only 'VALARM' components allowed in 'VEVENT'")
 
-    def getStatus(self):
+    def getStatus(self) -> int:
         return self.mStatus
 
-    def setStatus(self, status):
+    def setStatus(self, status: int) -> None:
         self.mStatus = status
 
-    def finalise(self):
-        # Do inherited
-        super(VEvent, self).finalise()
-
+    def finalise(self) -> None:
+        super().finalise()
         temp = self.loadValueString(definitions.cICalProperty_STATUS)
         if temp is not None:
             if temp == definitions.cICalProperty_STATUS_TENTATIVE:
@@ -92,25 +89,13 @@ class VEvent(ComponentRecur):
             elif temp == definitions.cICalProperty_STATUS_CANCELLED:
                 self.mStatus = definitions.eStatus_VEvent_Cancelled
 
-    def validate(self, doFix=False):
-        """
-        Validate the data in this component and optionally fix any problems, else raise. If
-        loggedProblems is not None it must be a C{list} and problem descriptions are appended
-        to that.
-        """
-
-        fixed, unfixed = super(VEvent, self).validate(doFix)
-
-        # Extra constraint: if METHOD not present, DTSTART must be
+    def validate(self, doFix: bool = False) -> Tuple[List[str], List[str]]:
+        fixed, unfixed = super().validate(doFix)
         if self.mParentComponent and not self.mParentComponent.hasProperty(definitions.cICalProperty_METHOD):
             if not self.hasProperty(definitions.cICalProperty_DTSTART):
-                # Cannot fix a missing required property
                 logProblem = "[%s] Missing required property: %s" % (self.getType(), definitions.cICalProperty_DTSTART,)
                 unfixed.append(logProblem)
-
-        # Extra constraint: only one of DTEND or DURATION
         if self.hasProperty(definitions.cICalProperty_DTEND) and self.hasProperty(definitions.cICalProperty_DURATION):
-            # Fix by removing the DTEND
             logProblem = "[%s] Properties must not both be present: %s, %s" % (
                 self.getType(),
                 definitions.cICalProperty_DTEND,
@@ -121,21 +106,13 @@ class VEvent(ComponentRecur):
                 fixed.append(logProblem)
             else:
                 unfixed.append(logProblem)
-
         return fixed, unfixed
 
-    # Editing
-    def editStatus(self, status):
-        # Only if it is different
+    def editStatus(self, status: int) -> None:
         if self.mStatus != status:
-            # Updated cached values
             self.mStatus = status
-
-            # Remove existing STATUS items
             self.removeProperties(definitions.cICalProperty_STATUS)
-
-            # Now create properties
-            value = None
+            value: Optional[str] = None
             if status == definitions.eStatus_VEvent_None:
                 pass
             elif status == definitions.eStatus_VEvent_Tentative:
@@ -144,14 +121,11 @@ class VEvent(ComponentRecur):
                 value = definitions.cICalProperty_STATUS_CONFIRMED
             elif status == definitions.eStatus_VEvent_Cancelled:
                 value = definitions.cICalProperty_STATUS_CANCELLED
-            else:
-                pass
-
             if value is not None:
                 prop = Property(definitions.cICalProperty_STATUS, value)
                 self.addProperty(prop)
 
-    def sortedPropertyKeyOrder(self):
+    def sortedPropertyKeyOrder(self) -> Tuple[str, ...]:
         return (
             definitions.cICalProperty_UID,
             definitions.cICalProperty_RECURRENCE_ID,

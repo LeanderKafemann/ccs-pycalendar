@@ -18,7 +18,6 @@ from pycalendar.icalendar import definitions
 from pycalendar.icalendar.component import Component
 from pycalendar.icalendar.vtimezoneelement import VTimezoneElement
 
-
 class Daylight(VTimezoneElement):
 
     def __init__(self, parent=None):

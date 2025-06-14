@@ -13,34 +13,31 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ##
-
+from typing import Any, Tuple
 from pycalendar.icalendar import definitions
 from pycalendar.icalendar.component import Component
 from pycalendar.icalendar.validation import ICALENDAR_VALUE_CHECKS
 
-
 class Vote(Component):
+    propertyCardinality_1: Tuple[str, ...] = ()
 
-    propertyCardinality_1 = (
-    )
-
-    propertyCardinality_0_1 = (
+    propertyCardinality_0_1: Tuple[str, ...] = (
         definitions.cICalProperty_POLL_ITEM_ID,
         definitions.cICalProperty_RESPONSE,
     )
 
-    propertyValueChecks = ICALENDAR_VALUE_CHECKS
+    propertyValueChecks: Any = ICALENDAR_VALUE_CHECKS
 
-    def __init__(self, parent=None):
-        super(Vote, self).__init__(parent=parent)
+    def __init__(self, parent: Any = None) -> None:
+        super().__init__(parent=parent)
 
-    def duplicate(self, parent=None):
-        return super(Vote, self).duplicate(parent=parent)
+    def duplicate(self, parent: Any = None) -> "Vote":
+        return super().duplicate(parent=parent)
 
-    def getType(self):
+    def getType(self) -> str:
         return definitions.cICalComponent_VOTE
 
-    def sortedPropertyKeyOrder(self):
+    def sortedPropertyKeyOrder(self) -> Tuple[str, ...]:
         return (
             definitions.cICalProperty_POLL_ITEM_ID,
             definitions.cICalProperty_RESPONSE,

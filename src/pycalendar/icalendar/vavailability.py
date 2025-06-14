@@ -13,21 +13,19 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ##
-
+from typing import Any, List, Set, Tuple
 from pycalendar.icalendar import definitions
 from pycalendar.icalendar import itipdefinitions
 from pycalendar.icalendar.component import Component
 from pycalendar.icalendar.validation import ICALENDAR_VALUE_CHECKS
 
-
 class VAvailability(Component):
-
-    propertyCardinality_1 = (
+    propertyCardinality_1: Tuple[str, ...] = (
         definitions.cICalProperty_DTSTAMP,
         definitions.cICalProperty_UID,
     )
 
-    propertyCardinality_0_1 = (
+    propertyCardinality_0_1: Tuple[str, ...] = (
         definitions.cICalProperty_BUSYTYPE,
         definitions.cICalProperty_CLASS,
         definitions.cICalProperty_CREATED,
@@ -43,35 +41,26 @@ class VAvailability(Component):
         definitions.cICalProperty_DURATION,
     )
 
-    propertyValueChecks = ICALENDAR_VALUE_CHECKS
+    propertyValueChecks: Any = ICALENDAR_VALUE_CHECKS
 
-    def __init__(self, parent=None):
-        super(VAvailability, self).__init__(parent=parent)
+    def __init__(self, parent: Any = None) -> None:
+        super().__init__(parent=parent)
 
-    def duplicate(self, parent=None):
-        return super(VAvailability, self).duplicate(parent=parent)
+    def duplicate(self, parent: Any = None) -> "VAvailability":
+        return super().duplicate(parent=parent)
 
-    def getType(self):
+    def getType(self) -> str:
         return definitions.cICalComponent_VAVAILABILITY
 
-    def getMimeComponentName(self):
+    def getMimeComponentName(self) -> str:
         return itipdefinitions.cICalMIMEComponent_VAVAILABILITY
 
-    def finalise(self):
-        super(VAvailability, self).finalise()
+    def finalise(self) -> None:
+        super().finalise()
 
-    def validate(self, doFix=False):
-        """
-        Validate the data in this component and optionally fix any problems, else raise. If
-        loggedProblems is not None it must be a C{list} and problem descriptions are appended
-        to that.
-        """
-
-        fixed, unfixed = super(VAvailability, self).validate(doFix)
-
-        # Extra constraint: only one of DTEND or DURATION
+    def validate(self, doFix: bool = False) -> Tuple[List[str], List[str]]:
+        fixed, unfixed = super().validate(doFix)
         if self.hasProperty(definitions.cICalProperty_DTEND) and self.hasProperty(definitions.cICalProperty_DURATION):
-            # Fix by removing the DTEND
             logProblem = "[%s] Properties must not both be present: %s, %s" % (
                 self.getType(),
                 definitions.cICalProperty_DTEND,
@@ -82,17 +71,15 @@ class VAvailability(Component):
                 fixed.append(logProblem)
             else:
                 unfixed.append(logProblem)
-
         return fixed, unfixed
 
-    def addComponent(self, comp):
-        # We can embed the available components only
+    def addComponent(self, comp: Any) -> None:
         if comp.getType() == definitions.cICalComponent_AVAILABLE:
-            super(VAvailability, self).addComponent(comp)
+            super().addComponent(comp)
         else:
             raise ValueError("Only 'AVAILABLE' components allowed in 'VAVAILABILITY'")
 
-    def sortedPropertyKeyOrder(self):
+    def sortedPropertyKeyOrder(self) -> Tuple[str, ...]:
         return (
             definitions.cICalProperty_UID,
             definitions.cICalProperty_DTSTART,
@@ -100,16 +87,8 @@ class VAvailability(Component):
             definitions.cICalProperty_DTEND,
         )
 
-    def getTimezones(self, tzids):
-        """
-        In addition to looking in the VAVAILABILITY component, we must also return any TZIDs used
-        in AVAILABLE child components.
-
-        @param tzids: result to report back
-        @type tzids: L{set}
-        """
-
-        super(VAvailability, self).getTimezones(tzids)
+    def getTimezones(self, tzids: Set[str]) -> None:
+        super().getTimezones(tzids)
         for available in self.getComponents(definitions.cICalComponent_AVAILABLE):
             available.getTimezones(tzids)
 

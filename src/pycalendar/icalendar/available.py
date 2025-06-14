@@ -13,22 +13,20 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ##
-
+from typing import Any, List, Tuple, Optional
 from pycalendar.icalendar import definitions
 from pycalendar.icalendar.component import Component
 from pycalendar.icalendar.componentrecur import ComponentRecur
 from pycalendar.icalendar.validation import ICALENDAR_VALUE_CHECKS
 
-
 class Available(ComponentRecur):
-
-    propertyCardinality_1 = (
+    propertyCardinality_1: Tuple[str, ...] = (
         definitions.cICalProperty_DTSTAMP,
         definitions.cICalProperty_DTSTART,
         definitions.cICalProperty_UID,
     )
 
-    propertyCardinality_0_1 = (
+    propertyCardinality_0_1: Tuple[str, ...] = (
         definitions.cICalProperty_CREATED,
         definitions.cICalProperty_DESCRIPTION,
         definitions.cICalProperty_GEO,
@@ -42,29 +40,27 @@ class Available(ComponentRecur):
         definitions.cICalProperty_DURATION,
     )
 
-    propertyValueChecks = ICALENDAR_VALUE_CHECKS
+    propertyValueChecks: Any = ICALENDAR_VALUE_CHECKS
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[Any] = None) -> None:
         super(Available, self).__init__(parent=parent)
 
-    def duplicate(self, parent=None):
+    def duplicate(self, parent: Optional[Any] = None) -> "Available":
         return super(Available, self).duplicate(parent=parent)
 
-    def getType(self):
+    def getType(self) -> str:
         return definitions.cICalComponent_AVAILABLE
 
-    def validate(self, doFix=False):
+    def validate(self, doFix: bool = False) -> Tuple[List[str], List[str]]:
         """
         Validate the data in this component and optionally fix any problems, else raise. If
         loggedProblems is not None it must be a C{list} and problem descriptions are appended
         to that.
         """
-
         fixed, unfixed = super(Available, self).validate(doFix)
 
         # Extra constraint: only one of DTEND or DURATION
         if self.hasProperty(definitions.cICalProperty_DTEND) and self.hasProperty(definitions.cICalProperty_DURATION):
-            # Fix by removing the DTEND
             logProblem = "[%s] Properties must not both be present: %s, %s" % (
                 self.getType(),
                 definitions.cICalProperty_DTEND,
@@ -78,7 +74,7 @@ class Available(ComponentRecur):
 
         return fixed, unfixed
 
-    def sortedPropertyKeyOrder(self):
+    def sortedPropertyKeyOrder(self) -> Tuple[str, ...]:
         return (
             definitions.cICalProperty_UID,
             definitions.cICalProperty_RECURRENCE_ID,
@@ -86,4 +82,5 @@ class Available(ComponentRecur):
             definitions.cICalProperty_DURATION,
             definitions.cICalProperty_DTEND,
         )
+
 Component.registerComponent(definitions.cICalComponent_AVAILABLE, Available)

@@ -13,22 +13,20 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ##
-
+from typing import Any, Tuple
 from pycalendar.icalendar import definitions
 from pycalendar.icalendar import itipdefinitions
 from pycalendar.icalendar.component import Component
 from pycalendar.icalendar.componentrecur import ComponentRecur
 from pycalendar.icalendar.validation import ICALENDAR_VALUE_CHECKS
 
-
 class VJournal(ComponentRecur):
-
-    propertyCardinality_1 = (
+    propertyCardinality_1: Tuple[str, ...] = (
         definitions.cICalProperty_DTSTAMP,
         definitions.cICalProperty_UID,
     )
 
-    propertyCardinality_0_1 = (
+    propertyCardinality_0_1: Tuple[str, ...] = (
         definitions.cICalProperty_CLASS,
         definitions.cICalProperty_CREATED,
         definitions.cICalProperty_DTSTART,
@@ -42,24 +40,24 @@ class VJournal(ComponentRecur):
         definitions.cICalProperty_RRULE,
     )
 
-    propertyValueChecks = ICALENDAR_VALUE_CHECKS
+    propertyValueChecks: Any = ICALENDAR_VALUE_CHECKS
 
-    def __init__(self, parent=None):
-        super(VJournal, self).__init__(parent=parent)
+    def __init__(self, parent: Any = None) -> None:
+        super().__init__(parent=parent)
 
-    def duplicate(self, parent=None):
-        return super(VJournal, self).duplicate(parent=parent)
+    def duplicate(self, parent: Any = None) -> "VJournal":
+        return super().duplicate(parent=parent)
 
-    def getType(self):
+    def getType(self) -> str:
         return definitions.cICalComponent_VJOURNAL
 
-    def getMimeComponentName(self):
+    def getMimeComponentName(self) -> str:
         return itipdefinitions.cICalMIMEComponent_VJOURNAL
 
-    def finalise(self):
-        super(VJournal, self).finalise()
+    def finalise(self) -> None:
+        super().finalise()
 
-    def sortedPropertyKeyOrder(self):
+    def sortedPropertyKeyOrder(self) -> Tuple[str, ...]:
         return (
             definitions.cICalProperty_UID,
             definitions.cICalProperty_RECURRENCE_ID,

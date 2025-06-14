@@ -13,19 +13,18 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ##
-
+from typing import Any, Tuple, List
 from pycalendar.icalendar import definitions
 from pycalendar.icalendar.component import Component
 from pycalendar.icalendar.validation import ICALENDAR_VALUE_CHECKS
 
-
 class VVoter(Component):
 
-    propertyCardinality_1 = (
+    propertyCardinality_1: Tuple[str, ...] = (
         definitions.cICalProperty_VOTER,
     )
 
-    propertyCardinality_0_1 = (
+    propertyCardinality_0_1: Tuple[str, ...] = (
         definitions.cICalProperty_CREATED,
         definitions.cICalProperty_DESCRIPTION,
         definitions.cICalProperty_LAST_MODIFIED,
@@ -35,28 +34,28 @@ class VVoter(Component):
 
     propertyValueChecks = ICALENDAR_VALUE_CHECKS
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Any = None) -> None:
         super(VVoter, self).__init__(parent=parent)
 
-    def duplicate(self, parent=None):
+    def duplicate(self, parent: Any = None) -> "VVoter":
         return super(VVoter, self).duplicate(parent=parent)
 
-    def getType(self):
+    def getType(self) -> str:
         return definitions.cICalComponent_VVOTER
 
-    def addComponent(self, comp):
+    def addComponent(self, comp: Component) -> None:
         # We can embed the available components only
         if comp.getType() == definitions.cICalComponent_VOTE:
             super(VVoter, self).addComponent(comp)
         else:
             raise ValueError("Only 'VOTE' components allowed in 'VVOTER'")
 
-    def sortedPropertyKeyOrder(self):
+    def sortedPropertyKeyOrder(self) -> Tuple[str, ...]:
         return (
             definitions.cICalProperty_VOTER,
         )
 
-    def sortedComponents(self):
+    def sortedComponents(self) -> List[Component]:
         """
         Also take POLL-ITEM-ID into account
         """

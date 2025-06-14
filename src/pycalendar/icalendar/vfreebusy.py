@@ -13,7 +13,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ##
-
+from typing import Any, List, Optional, Tuple
 from pycalendar.datetime import DateTime
 from pycalendar.icalendar import definitions
 from pycalendar.icalendar import itipdefinitions
@@ -25,15 +25,13 @@ from pycalendar.period import Period
 from pycalendar.periodvalue import PeriodValue
 from pycalendar.value import Value
 
-
 class VFreeBusy(Component):
-
-    propertyCardinality_1 = (
+    propertyCardinality_1: Tuple[str, ...] = (
         definitions.cICalProperty_DTSTAMP,
         definitions.cICalProperty_UID,
     )
 
-    propertyCardinality_0_1 = (
+    propertyCardinality_0_1: Tuple[str, ...] = (
         definitions.cICalProperty_CONTACT,
         definitions.cICalProperty_DTSTART,
         definitions.cICalProperty_DTEND,
@@ -41,10 +39,19 @@ class VFreeBusy(Component):
         definitions.cICalProperty_URL,
     )
 
-    propertyValueChecks = ICALENDAR_VALUE_CHECKS
+    propertyValueChecks: Any = ICALENDAR_VALUE_CHECKS
 
-    def __init__(self, parent=None):
-        super(VFreeBusy, self).__init__(parent=parent)
+    mStart: DateTime
+    mHasStart: bool
+    mEnd: DateTime
+    mHasEnd: bool
+    mDuration: bool
+    mCachedBusyTime: bool
+    mSpanPeriod: Optional[Period]
+    mBusyTime: Optional[List[FreeBusy]]
+
+    def __init__(self, parent: Any = None) -> None:
+        super().__init__(parent=parent)
         self.mStart = DateTime()
         self.mHasStart = False
         self.mEnd = DateTime()
@@ -54,8 +61,8 @@ class VFreeBusy(Component):
         self.mSpanPeriod = None
         self.mBusyTime = None
 
-    def duplicate(self, parent=None):
-        other = super(VFreeBusy, self).duplicate(parent=parent)
+    def duplicate(self, parent: Any = None) -> "VFreeBusy":
+        other = super().duplicate(parent=parent)
         other.mStart = self.mStart.duplicate()
         other.mHasStart = self.mHasStart
         other.mEnd = self.mEnd.duplicate()
@@ -65,244 +72,166 @@ class VFreeBusy(Component):
         other.mBusyTime = None
         return other
 
-    def getType(self):
+    def getType(self) -> str:
         return definitions.cICalComponent_VFREEBUSY
 
-    def getMimeComponentName(self):
+    def getMimeComponentName(self) -> str:
         return itipdefinitions.cICalMIMEComponent_VFREEBUSY
 
-    def finalise(self):
-        # Do inherited
-        super(VFreeBusy, self).finalise()
-
-        # Get DTSTART
+    def finalise(self) -> None:
+        super().finalise()
         temp = self.loadValueDateTime(definitions.cICalProperty_DTSTART)
         self.mHasStart = temp is not None
         if self.mHasStart:
             self.mStart = temp
-
-        # Get DTEND
         temp = self.loadValueDateTime(definitions.cICalProperty_DTEND)
         if temp is None:
-            # Try DURATION instead
             temp = self.loadValueDuration(definitions.cICalProperty_DURATION)
             if temp is not None:
                 self.mEnd = self.mStart + temp
                 self.mDuration = True
             else:
-                # Force end to start, which will then be fixed to sensible
-                # value later
                 self.mEnd = self.mStart
         else:
             self.mHasEnd = True
             self.mDuration = False
             self.mEnd = temp
 
-    def fixStartEnd(self):
-        # End is always greater than start if start exists
+    def fixStartEnd(self) -> None:
         if self.mHasStart and self.mEnd <= self.mStart:
-            # Use the start
             self.mEnd = self.mStart.duplicate()
             self.mDuration = False
-
-            # Adjust to appropiate non-inclusive end point
             if self.mStart.isDateOnly():
                 self.mEnd.offsetDay(1)
-
-                # For all day events it makes sense to use duration
                 self.mDuration = True
             else:
-                # Use end of current day
                 self.mEnd.offsetDay(1)
                 self.mEnd.setHHMMSS(0, 0, 0)
 
-    def getStart(self):
+    def getStart(self) -> DateTime:
         return self.mStart
 
-    def hasStart(self):
+    def hasStart(self) -> bool:
         return self.mHasStart
 
-    def getEnd(self):
+    def getEnd(self) -> DateTime:
         return self.mEnd
 
-    def hasEnd(self):
+    def hasEnd(self) -> bool:
         return self.mHasEnd
 
-    def useDuration(self):
+    def useDuration(self) -> bool:
         return self.mDuration
 
-    def getSpanPeriod(self):
+    def getSpanPeriod(self) -> Optional[Period]:
         return self.mSpanPeriod
 
-    def getBusyTime(self):
+    def getBusyTime(self) -> Optional[List[FreeBusy]]:
         return self.mBusyTime
 
-    def editTiming(self):
-        # Updated cached values
+    def editTiming(self) -> None:
         self.mHasStart = False
         self.mHasEnd = False
         self.mDuration = False
         self.mStart.setToday()
         self.mEnd.setToday()
-
-        # Remove existing DTSTART & DTEND & DURATION & DUE items
         self.removeProperties(definitions.cICalProperty_DTSTART)
         self.removeProperties(definitions.cICalProperty_DTEND)
         self.removeProperties(definitions.cICalProperty_DURATION)
 
-    def editTimingStartEnd(self, start, end):
-        # Updated cached values
+    def editTimingStartEnd(self, start: DateTime, end: DateTime) -> None:
         self.mHasStart = self.mHasEnd = True
         self.mStart = start
         self.mEnd = end
         self.mDuration = False
         self.fixStartEnd()
-
-        # Remove existing DTSTART & DTEND & DURATION & DUE items
         self.removeProperties(definitions.cICalProperty_DTSTART)
         self.removeProperties(definitions.cICalProperty_DTEND)
         self.removeProperties(definitions.cICalProperty_DURATION)
-
-        # Now create properties
         prop = Property(definitions.cICalProperty_DTSTART, start)
         self.addProperty(prop)
-
-        # If its an all day event and the end one day after the start, ignore it
         temp = start.duplicate()
         temp.offsetDay(1)
         if not start.isDateOnly() or end != temp:
             prop = Property(definitions.cICalProperty_DTEND, end)
             self.addProperty(prop)
 
-    def editTimingStartDuration(self, start, duration):
-        # Updated cached values
+    def editTimingStartDuration(self, start: DateTime, duration: Any) -> None:
         self.mHasStart = True
         self.mHasEnd = False
         self.mStart = start
         self.mEnd = start + duration
         self.mDuration = True
-
-        # Remove existing DTSTART & DTEND & DURATION & DUE items
         self.removeProperties(definitions.cICalProperty_DTSTART)
         self.removeProperties(definitions.cICalProperty_DTEND)
         self.removeProperties(definitions.cICalProperty_DURATION)
         self.removeProperties(definitions.cICalProperty_DUE)
-
-        # Now create properties
         prop = Property(definitions.cICalProperty_DTSTART, start)
         self.addProperty(prop)
-
-        # If its an all day event and the duration is one day, ignore it
-        if (not start.isDateOnly() or (duration.getWeeks() != 0) or
-                (duration.getDays() > 1)):
+        if (not start.isDateOnly() or (duration.getWeeks() != 0) or (duration.getDays() > 1)):
             prop = Property(definitions.cICalProperty_DURATION, duration)
             self.addProperty(prop)
 
-    # Generating info
-    def expandPeriodComp(self, period, list):
-        # Cache the busy-time details if not done already
+    def expandPeriodComp(self, period: Period, result: List[Any]) -> None:
         if not self.mCachedBusyTime:
             self.cacheBusyTime()
-
-        # See if period intersects the busy time span range
         if (self.mBusyTime is not None) and period.isPeriodOverlap(self.mSpanPeriod):
-            list.append(self)
+            result.append(self)
 
-    def expandPeriodFB(self, period, list):
-        # Cache the busy-time details if not done already
+    def expandPeriodFB(self, period: Period, result: List[FreeBusy]) -> None:
         if not self.mCachedBusyTime:
             self.cacheBusyTime()
-
-        # See if period intersects the busy time span range
         if (self.mBusyTime is not None) and period.isPeriodOverlap(self.mSpanPeriod):
             for fb in self.mBusyTime:
-                list.append(FreeBusy(fb))
+                result.append(FreeBusy(fb))
 
-    def cacheBusyTime(self):
-
-        # Clear out any existing cache
+    def cacheBusyTime(self) -> None:
         self.mBusyTime = []
-
-        # Get all FREEBUSY items and add those that are BUSY
         min_start = DateTime()
         max_end = DateTime()
         props = self.getProperties()
         result = props.get(definitions.cICalProperty_FREEBUSY, ())
         for iter in result:
-
-            # Check the properties FBTYPE parameter
             type = 0
             is_busy = False
             if iter.hasParameter(definitions.cICalParameter_FBTYPE):
-
                 fbyype = iter.getParameterValue(definitions.cICalParameter_FBTYPE)
                 if fbyype.upper() == definitions.cICalParameter_FBTYPE_BUSY:
-
                     is_busy = True
                     type = FreeBusy.BUSY
-
                 elif fbyype.upper() == definitions.cICalParameter_FBTYPE_BUSYUNAVAILABLE:
-
                     is_busy = True
                     type = FreeBusy.BUSYUNAVAILABLE
-
                 elif fbyype.upper() == definitions.cICalParameter_FBTYPE_BUSYTENTATIVE:
-
                     is_busy = True
                     type = FreeBusy.BUSYTENTATIVE
-
                 else:
-
                     is_busy = False
                     type = FreeBusy.FREE
-
             else:
-
-                # Default is busy when no parameter
                 is_busy = True
                 type = FreeBusy.BUSY
-
-            # Add this period
             if is_busy:
-
                 multi = iter.getMultiValue()
                 if (multi is not None) and (multi.getType() == Value.VALUETYPE_PERIOD):
-
                     for o in multi.getValues():
-
-                        # Double-check type
                         period = None
                         if isinstance(o, PeriodValue):
                             period = o
-
-                        # Double-check type
                         if period is not None:
-
                             self.mBusyTime.append(FreeBusy(type, period.getValue()))
-
                             if len(self.mBusyTime) == 1:
-
                                 min_start = period.getValue().getStart()
                                 max_end = period.getValue().getEnd()
-
                             else:
-
                                 if min_start > period.getValue().getStart():
                                     min_start = period.getValue().getStart()
                                 if max_end < period.getValue().getEnd():
                                     max_end = period.getValue().getEnd()
-
-        # If nothing present, empty the list
         if len(self.mBusyTime) == 0:
-
             self.mBusyTime = None
-
         else:
-
-            # Sort the list by period
-            self.mBusyTime.sort(cmp=lambda x, y: x.getPeriod().getStart().compareDateTime(y.getPeriod().getStart()))
-
-            # Determine range
+            self.mBusyTime.sort(key=lambda x: x.getPeriod().getStart().getPosixTime())
             start = DateTime()
             end = DateTime()
             if self.mHasStart:
@@ -313,12 +242,10 @@ class VFreeBusy(Component):
                 end = self.mEnd
             else:
                 end = max_end
-
             self.mSpanPeriod = Period(start, end)
-
         self.mCachedBusyTime = True
 
-    def sortedPropertyKeyOrder(self):
+    def sortedPropertyKeyOrder(self) -> Tuple[str, ...]:
         return (
             definitions.cICalProperty_UID,
             definitions.cICalProperty_DTSTART,

@@ -19,7 +19,6 @@ from pycalendar.icalendar.recurrence import Recurrence
 from pycalendar.value import Value
 from pycalendar.valueutils import WrapperValue
 
-
 class RecurrenceValue(WrapperValue, Value):
 
     _wrappedClass = Recurrence

@@ -16,6 +16,5 @@
 
 from pycalendar.exceptions import ErrorBase
 
-
 class TooManyInstancesError(ErrorBase):
     pass

@@ -13,7 +13,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ##
-
+from typing import Any, Dict, List, Type, Union
 from pycalendar.parameter import Parameter
 from pycalendar.datetime import DateTime
 from pycalendar.duration import Duration
@@ -23,10 +23,8 @@ from pycalendar.icalendar.property import Property
 from pycalendar.icalendar.validation import ICALENDAR_VALUE_CHECKS
 from pycalendar.value import Value
 
-
 class VAlarm(Component):
-
-    sActionMap = {
+    sActionMap: Dict[str, int] = {
         definitions.cICalProperty_ACTION_AUDIO: definitions.eAction_VAlarm_Audio,
         definitions.cICalProperty_ACTION_DISPLAY: definitions.eAction_VAlarm_Display,
         definitions.cICalProperty_ACTION_EMAIL: definitions.eAction_VAlarm_Email,
@@ -35,7 +33,7 @@ class VAlarm(Component):
         definitions.cICalProperty_ACTION_NONE: definitions.eAction_VAlarm_None,
     }
 
-    sActionValueMap = {
+    sActionValueMap: Dict[int, str] = {
         definitions.eAction_VAlarm_Audio: definitions.cICalProperty_ACTION_AUDIO,
         definitions.eAction_VAlarm_Display: definitions.cICalProperty_ACTION_DISPLAY,
         definitions.eAction_VAlarm_Email: definitions.cICalProperty_ACTION_EMAIL,
@@ -44,262 +42,233 @@ class VAlarm(Component):
         definitions.eAction_VAlarm_None: definitions.cICalProperty_ACTION_NONE,
     }
 
-    # Classes for each action encapsulating action-specific data
     class VAlarmAction(object):
+        propertyCardinality_1: tuple = ()
+        propertyCardinality_1_Fix_Empty: tuple = ()
+        propertyCardinality_0_1: tuple = ()
+        propertyCardinality_1_More: tuple = ()
 
-        propertyCardinality_1 = ()
-        propertyCardinality_1_Fix_Empty = ()
-        propertyCardinality_0_1 = ()
-        propertyCardinality_1_More = ()
+        mType: int
 
-        def __init__(self, type):
+        def __init__(self, type: int) -> None:
             self.mType = type
 
-        def duplicate(self):
+        def duplicate(self) -> "VAlarm.VAlarmAction":
             return VAlarm.VAlarmAction(self.mType)
 
-        def load(self, valarm):
+        def load(self, valarm: "VAlarm") -> None:
             pass
 
-        def add(self, valarm):
+        def add(self, valarm: "VAlarm") -> None:
             pass
 
-        def remove(self, valarm):
+        def remove(self, valarm: "VAlarm") -> None:
             pass
 
-        def getType(self):
+        def getType(self) -> int:
             return self.mType
 
     class VAlarmAudio(VAlarmAction):
-
-        propertyCardinality_1 = (
+        propertyCardinality_1: tuple = (
             definitions.cICalProperty_ACTION,
             definitions.cICalProperty_TRIGGER,
         )
-
-        propertyCardinality_0_1 = (
+        propertyCardinality_0_1: tuple = (
             definitions.cICalProperty_DURATION,
             definitions.cICalProperty_REPEAT,
             definitions.cICalProperty_ATTACH,
             definitions.cICalProperty_ACKNOWLEDGED,
         )
+        mSpeakText: str
 
-        def __init__(self, speak=None):
-            super(VAlarm.VAlarmAudio, self).__init__(type=definitions.eAction_VAlarm_Audio)
+        def __init__(self, speak: str = "") -> None:
+            super().__init__(type=definitions.eAction_VAlarm_Audio)
             self.mSpeakText = speak
 
-        def duplicate(self):
+        def duplicate(self) -> "VAlarm.VAlarmAudio":
             return VAlarm.VAlarmAudio(self.mSpeakText)
 
-        def load(self, valarm):
-            # Get properties
+        def load(self, valarm: "VAlarm") -> None:
             self.mSpeakText = valarm.loadValueString(definitions.cICalProperty_ACTION_X_SPEAKTEXT)
 
-        def add(self, valarm):
-            # Delete existing then add
+        def add(self, valarm: "VAlarm") -> None:
             self.remove(valarm)
-
             prop = Property(definitions.cICalProperty_ACTION_X_SPEAKTEXT, self.mSpeakText)
             valarm.addProperty(prop)
 
-        def remove(self, valarm):
+        def remove(self, valarm: "VAlarm") -> None:
             valarm.removeProperties(definitions.cICalProperty_ACTION_X_SPEAKTEXT)
 
-        def isSpeakText(self):
+        def isSpeakText(self) -> bool:
             return len(self.mSpeakText) != 0
 
-        def getSpeakText(self):
+        def getSpeakText(self) -> str:
             return self.mSpeakText
 
     class VAlarmDisplay(VAlarmAction):
-
-        propertyCardinality_1 = (
+        propertyCardinality_1: tuple = (
             definitions.cICalProperty_ACTION,
             definitions.cICalProperty_TRIGGER,
         )
-
-        propertyCardinality_1_Fix_Empty = (
+        propertyCardinality_1_Fix_Empty: tuple = (
             definitions.cICalProperty_DESCRIPTION,
         )
-
-        propertyCardinality_0_1 = (
+        propertyCardinality_0_1: tuple = (
             definitions.cICalProperty_DURATION,
             definitions.cICalProperty_REPEAT,
             definitions.cICalProperty_ACKNOWLEDGED,
         )
+        mDescription: str
 
-        def __init__(self, description=None):
-            super(VAlarm.VAlarmDisplay, self).__init__(type=definitions.eAction_VAlarm_Display)
+        def __init__(self, description: str = "") -> None:
+            super().__init__(type=definitions.eAction_VAlarm_Display)
             self.mDescription = description
 
-        def duplicate(self):
+        def duplicate(self) -> "VAlarm.VAlarmDisplay":
             return VAlarm.VAlarmDisplay(self.mDescription)
 
-        def load(self, valarm):
-            # Get properties
+        def load(self, valarm: "VAlarm") -> None:
             self.mDescription = valarm.loadValueString(definitions.cICalProperty_DESCRIPTION)
 
-        def add(self, valarm):
-            # Delete existing then add
+        def add(self, valarm: "VAlarm") -> None:
             self.remove(valarm)
-
             prop = Property(definitions.cICalProperty_DESCRIPTION, self.mDescription)
             valarm.addProperty(prop)
 
-        def remove(self, valarm):
+        def remove(self, valarm: "VAlarm") -> None:
             valarm.removeProperties(definitions.cICalProperty_DESCRIPTION)
 
-        def getDescription(self):
+        def getDescription(self) -> str:
             return self.mDescription
 
     class VAlarmEmail(VAlarmAction):
-
-        propertyCardinality_1 = (
+        propertyCardinality_1: tuple = (
             definitions.cICalProperty_ACTION,
             definitions.cICalProperty_TRIGGER,
         )
-
-        propertyCardinality_1_Fix_Empty = (
+        propertyCardinality_1_Fix_Empty: tuple = (
             definitions.cICalProperty_DESCRIPTION,
             definitions.cICalProperty_SUMMARY,
         )
-
-        propertyCardinality_0_1 = (
+        propertyCardinality_0_1: tuple = (
             definitions.cICalProperty_DURATION,
             definitions.cICalProperty_REPEAT,
             definitions.cICalProperty_ACKNOWLEDGED,
         )
-
-        propertyCardinality_1_More = (
+        propertyCardinality_1_More: tuple = (
             definitions.cICalProperty_ATTENDEE,
         )
+        mDescription: str
+        mSummary: str
+        mAttendees: List[str]
 
-        def __init__(self, description=None, summary=None, attendees=None):
-            super(VAlarm.VAlarmEmail, self).__init__(type=definitions.eAction_VAlarm_Email)
+        def __init__(self, description: str = "", summary: str = "", attendees: Union[List[str], None] = None) -> None:
+            super().__init__(type=definitions.eAction_VAlarm_Email)
             self.mDescription = description
             self.mSummary = summary
-            self.mAttendees = attendees
+            self.mAttendees = attendees if attendees is not None else []
 
-        def duplicate(self):
-            return VAlarm.VAlarmEmail(self.mDescription, self.mSummary, self.mAttendees)
+        def duplicate(self) -> "VAlarm.VAlarmEmail":
+            return VAlarm.VAlarmEmail(self.mDescription, self.mSummary, self.mAttendees[:])
 
-        def load(self, valarm):
-            # Get properties
+        def load(self, valarm: "VAlarm") -> None:
             self.mDescription = valarm.loadValueString(definitions.cICalProperty_DESCRIPTION)
             self.mSummary = valarm.loadValueString(definitions.cICalProperty_SUMMARY)
-
             self.mAttendees = []
             if valarm.hasProperty(definitions.cICalProperty_ATTENDEE):
-                # Get each attendee
                 range = valarm.getProperties().get(definitions.cICalProperty_ATTENDEE, ())
                 for iter in range:
-                    # Get the attendee value
                     attendee = iter.getCalAddressValue()
                     if attendee is not None:
                         self.mAttendees.append(attendee.getValue())
 
-        def add(self, valarm):
-            # Delete existing then add
+        def add(self, valarm: "VAlarm") -> None:
             self.remove(valarm)
-
             prop = Property(definitions.cICalProperty_DESCRIPTION, self.mDescription)
             valarm.addProperty(prop)
-
             prop = Property(definitions.cICalProperty_SUMMARY, self.mSummary)
             valarm.addProperty(prop)
-
             for iter in self.mAttendees:
                 prop = Property(definitions.cICalProperty_ATTENDEE, iter, Value.VALUETYPE_CALADDRESS)
                 valarm.addProperty(prop)
 
-        def remove(self, valarm):
+        def remove(self, valarm: "VAlarm") -> None:
             valarm.removeProperties(definitions.cICalProperty_DESCRIPTION)
             valarm.removeProperties(definitions.cICalProperty_SUMMARY)
             valarm.removeProperties(definitions.cICalProperty_ATTENDEE)
 
-        def getDescription(self):
+        def getDescription(self) -> str:
             return self.mDescription
 
-        def getSummary(self):
+        def getSummary(self) -> str:
             return self.mSummary
 
-        def getAttendees(self):
+        def getAttendees(self) -> List[str]:
             return self.mAttendees
 
     class VAlarmUnknown(VAlarmAction):
-
-        propertyCardinality_1 = (
+        propertyCardinality_1: tuple = (
             definitions.cICalProperty_ACTION,
             definitions.cICalProperty_TRIGGER,
         )
-
-        propertyCardinality_0_1 = (
+        propertyCardinality_0_1: tuple = (
             definitions.cICalProperty_DURATION,
             definitions.cICalProperty_REPEAT,
             definitions.cICalProperty_ACKNOWLEDGED,
         )
 
-        def __init__(self):
-            super(VAlarm.VAlarmUnknown, self).__init__(type=definitions.eAction_VAlarm_Unknown)
+        def __init__(self) -> None:
+            super().__init__(type=definitions.eAction_VAlarm_Unknown)
 
-        def duplicate(self):
+        def duplicate(self) -> "VAlarm.VAlarmUnknown":
             return VAlarm.VAlarmUnknown()
 
     class VAlarmURI(VAlarmAction):
-
-        propertyCardinality_1 = (
+        propertyCardinality_1: tuple = (
             definitions.cICalProperty_ACTION,
             definitions.cICalProperty_TRIGGER,
             definitions.cICalProperty_URL,
         )
-
-        propertyCardinality_0_1 = (
+        propertyCardinality_0_1: tuple = (
             definitions.cICalProperty_DURATION,
             definitions.cICalProperty_REPEAT,
             definitions.cICalProperty_ACKNOWLEDGED,
         )
+        mURI: str
 
-        def __init__(self, uri=None):
-            super(VAlarm.VAlarmURI, self).__init__(type=definitions.eAction_VAlarm_URI)
+        def __init__(self, uri: str = "") -> None:
+            super().__init__(type=definitions.eAction_VAlarm_URI)
             self.mURI = uri
 
-        def duplicate(self):
+        def duplicate(self) -> "VAlarm.VAlarmURI":
             return VAlarm.VAlarmURI(self.mURI)
 
-        def load(self, valarm):
-            # Get properties
+        def load(self, valarm: "VAlarm") -> None:
             self.mURI = valarm.loadValueString(definitions.cICalProperty_URL)
 
-        def add(self, valarm):
-            # Delete existing then add
+        def add(self, valarm: "VAlarm") -> None:
             self.remove(valarm)
-
             prop = Property(definitions.cICalProperty_URL, self.mURI)
             valarm.addProperty(prop)
 
-        def remove(self, valarm):
+        def remove(self, valarm: "VAlarm") -> None:
             valarm.removeProperties(definitions.cICalProperty_URL)
 
-        def getURI(self):
+        def getURI(self) -> str:
             return self.mURI
 
     class VAlarmNone(VAlarmAction):
-
-        propertyCardinality_1 = (
+        propertyCardinality_1: tuple = (
             definitions.cICalProperty_ACTION,
         )
 
-        def __init__(self):
-            super(VAlarm.VAlarmNone, self).__init__(type=definitions.eAction_VAlarm_None)
+        def __init__(self) -> None:
+            super().__init__(type=definitions.eAction_VAlarm_None)
 
-        def duplicate(self):
+        def duplicate(self) -> "VAlarm.VAlarmNone":
             return VAlarm.VAlarmNone()
 
-    def getMimeComponentName(self):
-        # Cannot be sent as a separate MIME object
-        return None
-
-    sActionToAlarmMap = {
+    sActionToAlarmMap: Dict[int, Type["VAlarmAction"]] = {
         definitions.eAction_VAlarm_Audio: VAlarmAudio,
         definitions.eAction_VAlarm_Display: VAlarmDisplay,
         definitions.eAction_VAlarm_Email: VAlarmEmail,
@@ -307,122 +276,104 @@ class VAlarm(Component):
         definitions.eAction_VAlarm_None: VAlarmNone,
     }
 
-    propertyValueChecks = ICALENDAR_VALUE_CHECKS
+    propertyValueChecks: Any = ICALENDAR_VALUE_CHECKS
 
-    def __init__(self, parent=None):
+    mAction: int
+    mTriggerAbsolute: bool
+    mTriggerOnStart: bool
+    mTriggerOn: DateTime
+    mTriggerBy: Duration
+    mRepeats: int
+    mRepeatInterval: Duration
+    mStatusInit: bool
+    mAlarmStatus: int
+    mLastTrigger: DateTime
+    mNextTrigger: DateTime
+    mDoneCount: int
+    mActionData: "VAlarmAction"
 
-        super(VAlarm, self).__init__(parent=parent)
-
+    def __init__(self, parent: Any = None) -> None:
+        super().__init__(parent=parent)
         self.mAction = definitions.eAction_VAlarm_Display
         self.mTriggerAbsolute = False
         self.mTriggerOnStart = True
         self.mTriggerOn = DateTime()
-
-        # Set duration default to 1 hour
         self.mTriggerBy = Duration()
         self.mTriggerBy.setDuration(60 * 60)
-
-        # Does not repeat by default
         self.mRepeats = 0
         self.mRepeatInterval = Duration()
-        self.mRepeatInterval.setDuration(5 * 60)  # Five minutes
-
-        # Status
+        self.mRepeatInterval.setDuration(5 * 60)
         self.mStatusInit = False
         self.mAlarmStatus = definitions.eAlarm_Status_Pending
         self.mLastTrigger = DateTime()
         self.mNextTrigger = DateTime()
         self.mDoneCount = 0
-
-        # Create action data
         self.mActionData = VAlarm.VAlarmDisplay("")
 
-    def duplicate(self, parent=None):
-        other = super(VAlarm, self).duplicate(parent=parent)
+    def duplicate(self, parent: Any = None) -> "VAlarm":
+        other = super().duplicate(parent=parent)
         other.mAction = self.mAction
         other.mTriggerAbsolute = self.mTriggerAbsolute
         other.mTriggerOn = self.mTriggerOn.duplicate()
         other.mTriggerBy = self.mTriggerBy.duplicate()
         other.mTriggerOnStart = self.mTriggerOnStart
-
         other.mRepeats = self.mRepeats
         other.mRepeatInterval = self.mRepeatInterval.duplicate()
-
         other.mAlarmStatus = self.mAlarmStatus
         if self.mLastTrigger is not None:
             other.mLastTrigger = self.mLastTrigger.duplicate()
         if self.mNextTrigger is not None:
             other.mNextTrigger = self.mNextTrigger.duplicate()
         other.mDoneCount = self.mDoneCount
-
         other.mActionData = self.mActionData.duplicate()
         return other
 
-    def getType(self):
+    def getMimeComponentName(self) -> Union[str, None]:
+        return None
+
+    def getType(self) -> str:
         return definitions.cICalComponent_VALARM
 
-    def getAction(self):
+    def getAction(self) -> int:
         return self.mAction
 
-    def getActionData(self):
+    def getActionData(self) -> "VAlarmAction":
         return self.mActionData
 
-    def isTriggerAbsolute(self):
+    def isTriggerAbsolute(self) -> bool:
         return self.mTriggerAbsolute
 
-    def getTriggerOn(self):
+    def getTriggerOn(self) -> DateTime:
         return self.mTriggerOn
 
-    def getTriggerDuration(self):
+    def getTriggerDuration(self) -> Duration:
         return self.mTriggerBy
 
-    def isTriggerOnStart(self):
+    def isTriggerOnStart(self) -> bool:
         return self.mTriggerOnStart
 
-    def getRepeats(self):
+    def getRepeats(self) -> int:
         return self.mRepeats
 
-    def getInterval(self):
+    def getInterval(self) -> Duration:
         return self.mRepeatInterval
 
-    def added(self):
-        # Added to calendar so add to calendar notifier
-        # calstore::CCalendarNotifier::sCalendarNotifier.AddAlarm(this)
+    def added(self) -> None:
+        super().added()
 
-        # Do inherited
-        super(VAlarm, self).added()
+    def removed(self) -> None:
+        super().removed()
 
-    def removed(self):
-        # Removed from calendar so add to calendar notifier
-        # calstore::CCalendarNotifier::sCalendarNotifier.RemoveAlarm(this)
-
-        # Do inherited
-        super(VAlarm, self).removed()
-
-    def changed(self):
-        # Always force recalc of trigger status
+    def changed(self) -> None:
         self.mStatusInit = False
 
-        # Changed in calendar so change in calendar notifier
-        # calstore::CCalendarNotifier::sCalendarNotifier.ChangedAlarm(this)
-
-        # Do not do inherited as this is always a sub-component and we do not
-        # do top-level component changes
-        # super.changed()
-
-    def finalise(self):
-        # Do inherited
-        super(VAlarm, self).finalise()
-
-        # Get the ACTION
+    def finalise(self) -> None:
+        super().finalise()
         temp = self.loadValueString(definitions.cICalProperty_ACTION)
         if temp is not None:
             self.mAction = VAlarm.sActionMap.get(temp, definitions.eAction_VAlarm_Unknown)
             self.loadAction()
-
-        # Get the trigger
         if self.hasProperty(definitions.cICalProperty_TRIGGER):
-            # Determine the type of the value
             temp1 = self.loadValueDateTime(definitions.cICalProperty_TRIGGER)
             temp2 = self.loadValueDuration(definitions.cICalProperty_TRIGGER)
             if temp1 is not None:
@@ -431,11 +382,7 @@ class VAlarm(Component):
             elif temp2 is not None:
                 self.mTriggerAbsolute = False
                 self.mTriggerBy = temp2
-
-                # Get the property
                 prop = self.findFirstProperty(definitions.cICalProperty_TRIGGER)
-
-                # Look for RELATED parameter
                 if prop.hasParameter(definitions.cICalParameter_RELATED):
                     temp = prop.getParameterValue(definitions.cICalParameter_RELATED)
                     if temp == definitions.cICalParameter_RELATED_START:
@@ -444,19 +391,13 @@ class VAlarm(Component):
                         self.mTriggerOnStart = False
                 else:
                     self.mTriggerOnStart = True
-
-        # Get repeat & interval
         temp = self.loadValueInteger(definitions.cICalProperty_REPEAT)
         if temp is not None:
             self.mRepeats = temp
         temp = self.loadValueDuration(definitions.cICalProperty_DURATION)
         if temp is not None:
             self.mRepeatInterval = temp
-
-        # Set a map key for sorting
         self.mMapKey = "%s:%s" % (self.mAction, self.mTriggerOn if self.mTriggerAbsolute else self.mTriggerBy,)
-
-        # Alarm status - private to Mulberry
         status = self.loadValueString(definitions.cICalProperty_ALARM_X_ALARMSTATUS)
         if status is not None:
             if status == definitions.cICalProperty_ALARM_X_ALARMSTATUS_PENDING:
@@ -467,47 +408,28 @@ class VAlarm(Component):
                 self.mAlarmStatus = definitions.eAlarm_Status_Disabled
             else:
                 self.mAlarmStatus = definitions.eAlarm_Status_Pending
-
-        # Last trigger time - private to Mulberry
         temp = self.loadValueDateTime(definitions.cICalProperty_ALARM_X_LASTTRIGGER)
         if temp is not None:
             self.mLastTrigger = temp
 
-    def validate(self, doFix=False):
-        """
-        Validate the data in this component and optionally fix any problems, else raise. If
-        loggedProblems is not None it must be a C{list} and problem descriptions are appended
-        to that.
-        """
-
-        # Validate using action specific constraints
+    def validate(self, doFix: bool = False) -> Any:
         self.propertyCardinality_1 = self.mActionData.propertyCardinality_1
         self.propertyCardinality_1_Fix_Empty = self.mActionData.propertyCardinality_1_Fix_Empty
         self.propertyCardinality_0_1 = self.mActionData.propertyCardinality_0_1
         self.propertyCardinality_1_More = self.mActionData.propertyCardinality_1_More
-
-        fixed, unfixed = super(VAlarm, self).validate(doFix)
-
-        # Extra constraint: both DURATION and REPEAT must be present togethe
+        fixed, unfixed = super().validate(doFix)
         if self.hasProperty(definitions.cICalProperty_DURATION) ^ self.hasProperty(definitions.cICalProperty_REPEAT):
-            # Cannot fix this
             logProblem = "[%s] Properties must be present together: %s, %s" % (
                 self.getType(),
                 definitions.cICalProperty_DURATION,
                 definitions.cICalProperty_REPEAT,
             )
             unfixed.append(logProblem)
-
         return fixed, unfixed
 
-    def editStatus(self, status):
-        # Remove existing
+    def editStatus(self, status: int) -> None:
         self.removeProperties(definitions.cICalProperty_ALARM_X_ALARMSTATUS)
-
-        # Updated cached values
         self.mAlarmStatus = status
-
-        # Add new
         status_txt = ""
         if self.mAlarmStatus == definitions.eAlarm_Status_Pending:
             status_txt = definitions.cICalProperty_ALARM_X_ALARMSTATUS_PENDING
@@ -517,46 +439,29 @@ class VAlarm(Component):
             status_txt = definitions.cICalProperty_ALARM_X_ALARMSTATUS_DISABLED
         self.addProperty(Property(definitions.cICalProperty_ALARM_X_ALARMSTATUS, status_txt))
 
-    def editAction(self, action, data):
-        # Remove existing
+    def editAction(self, action: int, data: "VAlarmAction") -> None:
         self.removeProperties(definitions.cICalProperty_ACTION)
         self.mActionData.remove(self)
         self.mActionData = None
-
-        # Updated cached values
         self.mAction = action
         self.mActionData = data
-
-        # Add new properties to alarm
         action_txt = VAlarm.sActionValueMap.get(self.mAction, definitions.cICalProperty_ACTION_PROCEDURE)
-
         prop = Property(definitions.cICalProperty_ACTION, action_txt)
         self.addProperty(prop)
-
         self.mActionData.add(self)
 
-    def editTriggerOn(self, dt):
-        # Remove existing
+    def editTriggerOn(self, dt: DateTime) -> None:
         self.removeProperties(definitions.cICalProperty_TRIGGER)
-
-        # Updated cached values
         self.mTriggerAbsolute = True
         self.mTriggerOn = dt
-
-        # Add new
         prop = Property(definitions.cICalProperty_TRIGGER, dt)
         self.addProperty(prop)
 
-    def editTriggerBy(self, duration, trigger_start):
-        # Remove existing
+    def editTriggerBy(self, duration: Duration, trigger_start: bool) -> None:
         self.removeProperties(definitions.cICalProperty_TRIGGER)
-
-        # Updated cached values
         self.mTriggerAbsolute = False
         self.mTriggerBy = duration
         self.mTriggerOnStart = trigger_start
-
-        # Add new (with parameter)
         prop = Property(definitions.cICalProperty_TRIGGER, duration)
         attr = Parameter(
             definitions.cICalParameter_RELATED,
@@ -568,36 +473,27 @@ class VAlarm(Component):
         prop.addParameter(attr)
         self.addProperty(prop)
 
-    def editRepeats(self, repeat, interval):
-        # Remove existing
+    def editRepeats(self, repeat: int, interval: Duration) -> None:
         self.removeProperties(definitions.cICalProperty_REPEAT)
         self.removeProperties(definitions.cICalProperty_DURATION)
-
-        # Updated cached values
         self.mRepeats = repeat
         self.mRepeatInterval = interval
-
-        # Add new
         if self.mRepeats > 0:
             self.addProperty(Property(definitions.cICalProperty_REPEAT, repeat))
             self.addProperty(Property(definitions.cICalProperty_DURATION, interval))
 
-    def getAlarmStatus(self):
+    def getAlarmStatus(self) -> int:
         return self.mAlarmStatus
 
-    def getNextTrigger(self, dt):
+    def getNextTrigger(self, dt: DateTime) -> None:
         if not self.mStatusInit:
             self.initNextTrigger()
         dt.copy(self.mNextTrigger)
 
-    def alarmTriggered(self, dt):
-        # Remove existing
+    def alarmTriggered(self, dt: DateTime) -> bool:
         self.removeProperties(definitions.cICalProperty_ALARM_X_LASTTRIGGER)
         self.removeProperties(definitions.cICalProperty_ALARM_X_ALARMSTATUS)
-
-        # Updated cached values
         self.mLastTrigger.copy(dt)
-
         if self.mDoneCount < self.mRepeats:
             self.mNextTrigger = self.mLastTrigger + self.mRepeatInterval
             dt.copy(self.mNextTrigger)
@@ -605,8 +501,6 @@ class VAlarm(Component):
             self.mAlarmStatus = definitions.eAlarm_Status_Pending
         else:
             self.mAlarmStatus = definitions.eAlarm_Status_Completed
-
-        # Add new
         self.addProperty(Property(definitions.cICalProperty_ALARM_X_LASTTRIGGER, dt))
         status = ""
         if self.mAlarmStatus == definitions.eAlarm_Status_Pending:
@@ -616,41 +510,27 @@ class VAlarm(Component):
         elif self.mAlarmStatus == definitions.eAlarm_Status_Disabled:
             status = definitions.cICalProperty_ALARM_X_ALARMSTATUS_DISABLED
         self.addProperty(Property(definitions.cICalProperty_ALARM_X_ALARMSTATUS, status))
-
-        # Now update dt to the next alarm time
         return self.mAlarmStatus == definitions.eAlarm_Status_Pending
 
-    def loadAction(self):
-        # Delete current one
+    def loadAction(self) -> None:
         self.mActionData = None
         self.mActionData = VAlarm.sActionToAlarmMap.get(self.mAction, VAlarm.VAlarmUnknown)()
         self.mActionData.load(self)
 
-    def initNextTrigger(self):
-        # Do not bother if its completed
+    def initNextTrigger(self) -> None:
         if self.mAlarmStatus == definitions.eAlarm_Status_Completed:
             return
         self.mStatusInit = True
-
-        # Look for trigger immediately preceeding or equal to utc now
         nowutc = DateTime.getNowUTC()
-
-        # Init done counter
         self.mDoneCount = 0
-
-        # Determine the first trigger
         trigger = DateTime()
         self.getFirstTrigger(trigger)
-
         while self.mDoneCount < self.mRepeats:
-            # See if next trigger is later than now
             next_trigger = trigger + self.mRepeatInterval
             if next_trigger > nowutc:
                 break
             self.mDoneCount += 1
             trigger = next_trigger
-
-        # Check for completion
         if trigger == self.mLastTrigger or (nowutc - trigger).getTotalSeconds() > 24 * 60 * 60:
             if self.mDoneCount == self.mRepeats:
                 self.mAlarmStatus = definitions.eAlarm_Status_Completed
@@ -658,22 +538,15 @@ class VAlarm(Component):
             else:
                 trigger = trigger + self.mRepeatInterval
                 self.mDoneCount += 1
-
         self.mNextTrigger = trigger
 
-    def getFirstTrigger(self, dt):
-        # If absolute trigger, use that
+    def getFirstTrigger(self, dt: DateTime) -> None:
         if self.isTriggerAbsolute():
-            # Get the trigger on
             dt.copy(self.getTriggerOn())
         else:
-            # Get the parent embedder class (must be CICalendarComponentRecur type)
             owner = self.getEmbedder()
             if owner is not None:
-                # Determine time at which alarm will trigger
                 trigger = (owner.getStart(), owner.getEnd())[not self.isTriggerOnStart()]
-
-                # Offset by duration
                 dt.copy(trigger + self.getTriggerDuration())
 
 Component.registerComponent(definitions.cICalComponent_VALARM, VAlarm)

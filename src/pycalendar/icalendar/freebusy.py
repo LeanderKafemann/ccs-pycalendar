@@ -13,38 +13,40 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ##
-
+from typing import Any, List, Optional
 
 class FreeBusy(object):
+    FREE: int = 0
+    BUSYTENTATIVE: int = 1
+    BUSYUNAVAILABLE: int = 2
+    BUSY: int = 3
 
-    FREE = 0
-    BUSYTENTATIVE = 1
-    BUSYUNAVAILABLE = 2
-    BUSY = 3
+    mType: int
+    mPeriod: Any
 
-    def __init__(self, type=None, period=None):
+    def __init__(self, type: Optional[int] = None, period: Optional[Any] = None) -> None:
+        self.mType: int = type if type is not None else FreeBusy.FREE
+        self.mPeriod: Any = period.duplicate() if period is not None else None
 
-        self.mType = type if type else FreeBusy.FREE
-        self.mPeriod = period.duplicate() if period is not None else None
-
-    def duplicate(self):
+    def duplicate(self) -> "FreeBusy":
         return FreeBusy(self.mType, self.mPeriod)
 
-    def setType(self, type):
+    def setType(self, type: int) -> None:
         self.mType = type
 
-    def getType(self):
+    def getType(self) -> int:
         return self.mType
 
-    def setPeriod(self, period):
+    def setPeriod(self, period: Any) -> None:
         self.mPeriod = period.duplicate()
 
-    def getPeriod(self):
+    def getPeriod(self) -> Any:
         return self.mPeriod
 
-    def isPeriodOverlap(self, period):
+    def isPeriodOverlap(self, period: Any) -> bool:
         return self.mPeriod.isPeriodOverlap(period)
 
-    def resolveOverlaps(self, fb):
+    @staticmethod
+    def resolveOverlaps(fb: List["FreeBusy"]) -> None:
         # TODO:
         pass

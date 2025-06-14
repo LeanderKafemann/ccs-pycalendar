@@ -15,7 +15,7 @@
 ##
 
 # iCalendar REQUEST-STATUS value
-
+from typing import Any, List, Optional, Union
 from pycalendar import utils, xmlutils
 from pycalendar.icalendar import xmldefinitions
 from pycalendar.parser import ParserContext
@@ -23,27 +23,26 @@ from pycalendar.value import Value
 from pycalendar import xmldefinitions as xmldefinitions_top
 import xml.etree.cElementTree as XML
 
-
 class RequestStatusValue(Value):
     """
     The value is a list of strings (either 2 or 3 items)
     """
+    mValue: List[str]
 
-    def __init__(self, value=None):
+    def __init__(self, value: Union[List[str], None] = None) -> None:
         self.mValue = value if value is not None else ["2.0", "Success"]
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(tuple(self.mValue))
 
-    def duplicate(self):
+    def duplicate(self) -> "RequestStatusValue":
         return RequestStatusValue(self.mValue[:])
 
-    def getType(self):
+    def getType(self) -> int:
         return Value.VALUETYPE_REQUEST_STATUS
 
-    def parse(self, data, variant="icalendar"):
-
-        result = utils.parseTextList(data, always_list=True)
+    def parse(self, data: str, variant: str = "icalendar") -> None:
+        result: List[str] = utils.parseTextList(data, always_list=True)
         if len(result) == 1:
             if ParserContext.INVALID_REQUEST_STATUS_VALUE != ParserContext.PARSER_RAISE:
                 if ";" in result[0]:
@@ -64,45 +63,38 @@ class RequestStatusValue(Value):
                 code, desc, rest = result[:3]
             else:
                 raise ValueError("RequestStatus: too many value components")
-
         if "\\" in code and ParserContext.INVALID_REQUEST_STATUS_VALUE in (ParserContext.PARSER_IGNORE, ParserContext.PARSER_FIX):
             code = code.replace("\\", "")
         elif ParserContext.INVALID_REQUEST_STATUS_VALUE == ParserContext.PARSER_RAISE:
             raise ValueError("RequestStatus: cannot have '\\' in value")
+        self.mValue = [code, desc, rest] if rest else [code, desc]
 
-        # Decoding required
-        self.mValue = [code, desc, rest, ] if rest else [code, desc, ]
+    def generate(self, os: Any) -> None:
+        utils.generateTextList(os, self.mValue if len(self.mValue) < 3 or not self.mValue[2] else self.mValue[:2])
 
-    # os - StringIO object
-    def generate(self, os):
-        utils.generateTextList(os, self.mValue if len(self.mValue) < 3 or self.mValue[2] else self.mValue[:2])
-
-    def writeXML(self, node, namespace):
+    def writeXML(self, node: Any, namespace: str) -> None:
         value = self.getXMLNode(node, namespace)
-
         code = XML.SubElement(value, xmlutils.makeTag(namespace, xmldefinitions.req_status_code))
         code.text = self.mValue[0]
-
         description = XML.SubElement(value, xmlutils.makeTag(namespace, xmldefinitions.req_status_description))
         description.text = self.mValue[1]
-
         if len(self.mValue) == 3 and self.mValue[2]:
             data = XML.SubElement(value, xmlutils.makeTag(namespace, xmldefinitions.req_status_data))
             data.text = self.mValue[2]
 
-    def parseJSONValue(self, jobject):
-        self.mValue = map(lambda x: x.encode("utf-8"), jobject)
+    def parseJSONValue(self, jobject: List[str]) -> None:
+        self.mValue = [x.encode("utf-8") if isinstance(x, str) else x for x in jobject]
 
-    def writeJSONValue(self, jobject):
-        value = [self.mValue[0], self.mValue[1]]
+    def writeJSONValue(self, jobject: List[Any]) -> None:
+        value: List[str] = [self.mValue[0], self.mValue[1]]
         if len(self.mValue) == 3:
             value.append(self.mValue[2])
         jobject.append(value)
 
-    def getValue(self):
+    def getValue(self) -> List[str]:
         return self.mValue
 
-    def setValue(self, value):
+    def setValue(self, value: List[str]) -> None:
         self.mValue = value
 
 Value.registerType(Value.VALUETYPE_REQUEST_STATUS, RequestStatusValue, None, xmldefinitions_top.value_text)

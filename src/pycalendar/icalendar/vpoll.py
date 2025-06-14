@@ -13,22 +13,20 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ##
-
+from typing import Any, List, Tuple
 from pycalendar.icalendar import definitions
 from pycalendar.icalendar import itipdefinitions
 from pycalendar.icalendar.component import Component
 from pycalendar.icalendar.validation import ICALENDAR_VALUE_CHECKS
 
-
 class VPoll(Component):
-
-    propertyCardinality_1 = (
+    propertyCardinality_1: Tuple[str, ...] = (
         definitions.cICalProperty_DTSTAMP,
         definitions.cICalProperty_UID,
         definitions.cICalProperty_ORGANIZER,
     )
 
-    propertyCardinality_0_1 = (
+    propertyCardinality_0_1: Tuple[str, ...] = (
         definitions.cICalProperty_ACCEPT_RESPONSE,
         definitions.cICalProperty_CLASS,
         definitions.cICalProperty_CREATED,
@@ -48,15 +46,15 @@ class VPoll(Component):
         definitions.cICalProperty_URL,
     )
 
-    propertyValueChecks = ICALENDAR_VALUE_CHECKS
+    propertyValueChecks: Any = ICALENDAR_VALUE_CHECKS
 
-    def getType(self):
+    def getType(self) -> str:
         return definitions.cICalComponent_VPOLL
 
-    def getMimeComponentName(self):
+    def getMimeComponentName(self) -> str:
         return itipdefinitions.cICalMIMEComponent_VPOLL
 
-    def sortedPropertyKeyOrder(self):
+    def sortedPropertyKeyOrder(self) -> Tuple[str, ...]:
         return (
             definitions.cICalProperty_UID,
             definitions.cICalProperty_DTSTART,
@@ -64,20 +62,17 @@ class VPoll(Component):
             definitions.cICalProperty_DTEND,
         )
 
-    def sortedComponents(self):
+    def sortedComponents(self) -> List[Any]:
         """
         Also take VVOTER and POLL-ID into account
         """
+        components: List[Any] = self.mComponents[:]
 
-        components = self.mComponents[:]
-
-        # VVOTER sorts above components with POLL-ITEM-ID
-        def _sortKey(subcomponent):
+        def _sortKey(subcomponent: Any) -> Tuple[str, Any]:
             if subcomponent.getType().upper() == definitions.cICalComponent_VVOTER:
                 return ("0", subcomponent.loadValueString(definitions.cICalProperty_VOTER),)
             else:
                 return (subcomponent.getType().upper(), subcomponent.loadValueInteger(definitions.cICalProperty_POLL_ITEM_ID),)
         return sorted(components, key=_sortKey)
-
 
 Component.registerComponent(definitions.cICalComponent_VPOLL, VPoll)

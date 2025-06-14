@@ -13,7 +13,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ##
-
+from typing import Any, ClassVar, Dict, Optional, Set, Type, Union
 from pycalendar import stringutils
 from pycalendar.componentbase import ComponentBase
 from pycalendar.datetime import DateTime
@@ -23,53 +23,51 @@ import os
 import time
 import uuid
 
-
 class Component(ComponentBase):
+    uid_ctr: ClassVar[int] = 1
+    mapper: ClassVar[Dict[str, Type["Component"]]] = {}
 
-    uid_ctr = 1
+    sComponentType: ClassVar[Optional[Type["Component"]]] = None
+    sPropertyType: ClassVar[Type[Property]] = Property
 
-    mapper = {}
-
-    sComponentType = None
-    sPropertyType = Property
+    mUID: str
+    mSeq: int
+    mOriginalSeq: int
+    mChanged: bool
 
     @classmethod
-    def registerComponent(cls, name, comptype):
+    def registerComponent(cls, name: str, comptype: Type["Component"]) -> None:
         cls.mapper[name] = comptype
 
     @classmethod
-    def makeComponent(cls, compname, parent):
+    def makeComponent(cls, compname: str, parent: Any) -> "Component":
         try:
             return cls.mapper[compname](parent=parent)
         except KeyError:
             return cls.mapper[definitions.cICalComponent_UNKNOWN](parent=parent, comptype=compname)
 
-    def __init__(self, parent=None):
-
+    def __init__(self, parent: Optional[Any] = None) -> None:
         super(Component, self).__init__(parent)
-        self.mUID = ""
-        self.mSeq = 0
-        self.mOriginalSeq = 0
-        self.mChanged = False
+        self.mUID: str = ""
+        self.mSeq: int = 0
+        self.mOriginalSeq: int = 0
+        self.mChanged: bool = False
 
-    def duplicate(self, parent=None, **args):
-
+    def duplicate(self, parent: Optional[Any] = None, **args: Any) -> "Component":
         other = super(Component, self).duplicate(parent=parent, **args)
         other.mUID = self.mUID
         other.mSeq = self.mSeq
         other.mOriginalSeq = self.mOriginalSeq
-
         other.mChanged = self.mChanged
-
         return other
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "%s: UID: %s" % (self.getType(), self.getMapKey(),)
 
-    def getMimeComponentName(self):
+    def getMimeComponentName(self) -> str:
         raise NotImplementedError
 
-    def getMapKey(self):
+    def getMapKey(self) -> str:
         if hasattr(self, "mMapKey"):
             return self.mMapKey
         elif self.mUID:
@@ -78,21 +76,19 @@ class Component(ComponentBase):
             self.mMapKey = str(uuid.uuid4())
             return self.mMapKey
 
-    def getSortKey(self):
+    def getSortKey(self) -> str:
         return self.getMapKey()
 
-    def getMasterKey(self):
+    def getMasterKey(self) -> str:
         return self.mUID
 
-    def getUID(self):
+    def getUID(self) -> str:
         return self.mUID
 
-    def setUID(self, uid):
+    def setUID(self, uid: Optional[str]) -> None:
         if uid:
             self.mUID = uid
         else:
-            # Get left-side of UID (first 24 chars of MD5 digest of time, pid
-            # and ctr)
             lhs_txt = ""
             lhs_txt += str(time.time())
             lhs_txt += "."
@@ -101,90 +97,64 @@ class Component(ComponentBase):
             lhs_txt += str(Component.uid_ctr)
             Component.uid_ctr += 1
             lhs = stringutils.md5digest(lhs_txt)
-
-            # Get right side (domain) of message-id
             rhs = None
-
-            # Use app name
             from pycalendar.icalendar.calendar import Calendar
             domain = Calendar.sDomain
             domain += str(Component.uid_ctr)
-
-            # Use first 24 chars of MD5 digest of the domain as the
-            # right-side of message-id
             rhs = stringutils.md5digest(domain)
-
-            # Generate the UID string
             new_uid = lhs
             new_uid += "@"
             new_uid += rhs
-
             self.mUID = new_uid
-
         self.removeProperties(definitions.cICalProperty_UID)
-
         prop = Property(definitions.cICalProperty_UID, self.mUID)
         self.addProperty(prop)
 
-    def getSeq(self):
+    def getSeq(self) -> int:
         return self.mSeq
 
-    def setSeq(self, seq):
+    def setSeq(self, seq: int) -> None:
         self.mSeq = seq
-
         self.removeProperties(definitions.cICalProperty_SEQUENCE)
-
         prop = Property(definitions.cICalProperty_SEQUENCE, self.mSeq)
         self.addProperty(prop)
 
-    def getOriginalSeq(self):
+    def getOriginalSeq(self) -> int:
         return self.mOriginalSeq
 
-    def getChanged(self):
+    def getChanged(self) -> bool:
         return self.mChanged
 
-    def setChanged(self, changed):
+    def setChanged(self, changed: bool) -> None:
         self.mChanged = changed
 
-    def initDTSTAMP(self):
+    def initDTSTAMP(self) -> None:
         self.removeProperties(definitions.cICalProperty_DTSTAMP)
-
         prop = Property(definitions.cICalProperty_DTSTAMP, DateTime.getNowUTC())
         self.addProperty(prop)
 
-    def updateLastModified(self):
+    def updateLastModified(self) -> None:
         self.removeProperties(definitions.cICalProperty_LAST_MODIFIED)
-
         prop = Property(definitions.cICalProperty_LAST_MODIFIED, DateTime.getNowUTC())
         self.addProperty(prop)
 
-    def finalise(self):
-        # Get UID
+    def finalise(self) -> None:
         temps = self.loadValueString(definitions.cICalProperty_UID)
         if temps is not None:
             self.mUID = temps
-
-        # Get SEQ
         temp = self.loadValueInteger(definitions.cICalProperty_SEQUENCE)
         if temp is not None:
             self.mSeq = temp
-
-        # Cache the original sequence when the component is read in.
-        # This will be used to synchronise changes between two instances of the
-        # same calendar
         self.mOriginalSeq = self.mSeq
 
-    def canGenerateInstance(self):
+    def canGenerateInstance(self) -> bool:
         return True
 
-    def getTimezones(self, tzids):
-        # Look for all date-time properties
-        for props in self.mProperties.itervalues():
+    def getTimezones(self, tzids: Set[str]) -> None:
+        for props in self.mProperties.values():
             for prop in props:
-                # Try to get a date-time value from the property
                 dtv = prop.getDateTimeValue()
                 if dtv is not None:
-                    # Add timezone id if appropriate
                     if dtv.getValue().getTimezoneID():
                         tzids.add(dtv.getValue().getTimezoneID())
 

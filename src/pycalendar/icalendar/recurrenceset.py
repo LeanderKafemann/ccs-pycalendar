@@ -13,14 +13,19 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ##
-
+from typing import Any, List
 from pycalendar.icalendar.exceptions import TooManyInstancesError
 from pycalendar.utils import set_difference
 
-
 class RecurrenceSet(object):
+    mRrules: List[Any]
+    mExrules: List[Any]
+    mRdates: List[Any]
+    mExdates: List[Any]
+    mRperiods: List[Any]
+    mExperiods: List[Any]
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.mRrules = []
         self.mExrules = []
         self.mRdates = []
@@ -28,7 +33,7 @@ class RecurrenceSet(object):
         self.mRperiods = []
         self.mExperiods = []
 
-    def duplicate(self):
+    def duplicate(self) -> "RecurrenceSet":
         other = RecurrenceSet()
         other.mRrules = [i.duplicate() for i in self.mRrules]
         other.mExrules = [i.duplicate() for i in self.mExrules]
@@ -38,152 +43,113 @@ class RecurrenceSet(object):
         other.mExperiods = [i.duplicate() for i in self.mExperiods]
         return other
 
-    def hasRecurrence(self):
+    def hasRecurrence(self) -> bool:
         return (
             (len(self.mRrules) != 0) or (len(self.mRdates) != 0) or (len(self.mRperiods) != 0) or
             (len(self.mExrules) != 0) or (len(self.mExdates) != 0) or
             (len(self.mExperiods) != 0)
         )
 
-    def equals(self, comp):
-        # Look at RRULEs
-        if not self.equalsRules(self.mRrules, comp.self.mRrules):
+    def equals(self, comp: "RecurrenceSet") -> bool:
+        if not self.equalsRules(self.mRrules, comp.mRrules):
             return False
-
-        # Look at EXRULEs
-        if not self.equalsRules(self.mExrules, comp.self.mExrules):
+        if not self.equalsRules(self.mExrules, comp.mExrules):
             return False
-
-        # Look at RDATEs
-        if not self.equalsDates(self.mRdates, comp.self.mRdates):
+        if not self.equalsDates(self.mRdates, comp.mRdates):
             return False
-        if not self.equalsPeriods(self.mRperiods, comp.self.mRperiods):
+        if not self.equalsPeriods(self.mRperiods, comp.mRperiods):
             return False
-
-        # Look at EXDATEs
-        if not self.equalsDates(self.mExdates, comp.self.mExdates):
+        if not self.equalsDates(self.mExdates, comp.mExdates):
             return False
-        if not self.equalsPeriods(self.mExperiods, comp.self.mExperiods):
+        if not self.equalsPeriods(self.mExperiods, comp.mExperiods):
             return False
-
-        # If we get here they match
         return True
 
-    def equalsRules(self, rules1, rules2):
-        # Check sizes first
+    def equalsRules(self, rules1: List[Any], rules2: List[Any]) -> bool:
         if len(rules1) != len(rules2):
             return False
         elif len(rules1) == 0:
             return True
-
-        # Do sledge hammer O(n^2) approach as its not easy to sort these things
-        # for a smarter test.
-        # In most cases there will only be one rule anyway, so this should not
-        # be too painful.
-
         temp2 = rules2[:]
-
         for r1 in rules1:
             found = False
             for r2 in temp2:
                 if r1.equals(r2):
-                    # Remove the one found so it is not tested again
                     temp2.remove(r2)
                     found = True
                     break
-
             if not found:
                 return False
-
         return True
 
-    def equalsDates(self, dates1, dates2):
-        # Check sizes first
+    def equalsDates(self, dates1: List[Any], dates2: List[Any]) -> bool:
         if len(dates1) != len(dates2):
             return False
         elif len(dates1) == 0:
             return True
-
-        # Copy each and sort for comparison
         dt1 = dates1[:]
         dt2 = dates2[:]
-
         dt1.sort(key=lambda x: x.getPosixTime())
         dt2.sort(key=lambda x: x.getPosixTime())
+        return dt1 == dt2
 
-        return dt1.equal(dt2)
-
-    def equalsPeriods(self, periods1, periods2):
-        # Check sizes first
+    def equalsPeriods(self, periods1: List[Any], periods2: List[Any]) -> bool:
         if len(periods1) != len(periods2):
             return False
         elif len(periods1) == 0:
             return True
-
-        # Copy each and sort for comparison
         p1 = periods1[:]
         p2 = periods2[:]
-
         p1.sort()
         p2.sort()
+        return p1 == p2
 
-        return p1.equal(p2)
-
-    def addRule(self, rule):
+    def addRule(self, rule: Any) -> None:
         self.mRrules.append(rule)
 
-    def subtractRule(self, rule):
+    def subtractRule(self, rule: Any) -> None:
         self.mExrules.append(rule)
 
-    def addDT(self, dt):
+    def addDT(self, dt: Any) -> None:
         self.mRdates.append(dt)
 
-    def subtractDT(self, dt):
+    def subtractDT(self, dt: Any) -> None:
         self.mExdates.append(dt)
 
-    def addPeriod(self, p):
+    def addPeriod(self, p: Any) -> None:
         self.mRperiods.append(p)
 
-    def subtractPeriod(self, p):
+    def subtractPeriod(self, p: Any) -> None:
         self.mExperiods.append(p)
 
-    def getRules(self):
+    def getRules(self) -> List[Any]:
         return self.mRrules
 
-    def getExrules(self):
+    def getExrules(self) -> List[Any]:
         return self.mExrules
 
-    def getDates(self):
+    def getDates(self) -> List[Any]:
         return self.mRdates
 
-    def getExdates(self):
+    def getExdates(self) -> List[Any]:
         return self.mExdates
 
-    def getPeriods(self):
+    def getPeriods(self) -> List[Any]:
         return self.mRperiods
 
-    def getExperiods(self):
+    def getExperiods(self) -> List[Any]:
         return self.mExperiods
 
-    def expand(self, start, range, items, float_offset=0, maxInstances=None):
-        # Need to return whether the limit was applied or not
-        limited = False
-
-        # Now create list of items to include
-        include = []
-
-        # Always include the initial DTSTART if within the range
+    def expand(self, start: Any, range: Any, items: List[Any], float_offset: int = 0, maxInstances: Any = None) -> bool:
+        limited: bool = False
+        include: List[Any] = []
         if range.isDateWithinPeriod(start):
             include.append(start)
         else:
             limited = True
-
-        # RRULES
         for iter in self.mRrules:
             if iter.expand(start, range, include, float_offset=float_offset, maxInstances=maxInstances):
                 limited = True
-
-        # RDATES
         for iter in self.mRdates:
             if range.isDateWithinPeriod(iter):
                 include.append(iter)
@@ -198,98 +164,63 @@ class RecurrenceSet(object):
                     raise TooManyInstancesError("Too many instances")
             else:
                 limited = True
-
-        # Make sure the list is unique
         include = [x for x in set(include)]
         include.sort(key=lambda x: x.getPosixTime())
-
-        # Now create list of items to exclude
-        exclude = []
-
-        # EXRULES
+        exclude: List[Any] = []
         for iter in self.mExrules:
             iter.expand(start, range, exclude, float_offset=float_offset)
-
-        # EXDATES
         for iter in self.mExdates:
             if range.isDateWithinPeriod(iter):
                 exclude.append(iter)
         for iter in self.mExperiods:
             if range.isPeriodOverlap(iter):
                 exclude.append(iter.getStart())
-
-        # Make sure the list is unique
         exclude = [x for x in set(exclude)]
         exclude.sort(key=lambda x: x.getPosixTime())
-
-        # Add difference between to the two sets (include - exclude) to the
-        # results
         items.extend(set_difference(include, exclude))
         return limited
 
-    def changed(self):
-        # RRULES
+    def changed(self) -> None:
         for iter in self.mRrules:
             iter.clear()
-
-        # EXRULES
         for iter in self.mExrules:
             iter.clear()
 
-    def excludeFutureRecurrence(self, exclude):
-        # Adjust RRULES to end before start
+    def excludeFutureRecurrence(self, exclude: Any) -> None:
         for iter in self.mRrules:
             iter.excludeFutureRecurrence(exclude)
+        self.mRdates = [dt for dt in self.mRdates if dt < exclude]
+        self.mRperiods = [iter for iter in self.mRperiods if iter <= exclude]
 
-        # Remove RDATES on or after start
-        self.mRdates.removeOnOrAfter(exclude)
-        for iter in self.mRperiods:
-            if iter > exclude:
-                self.mRperiods.remove(iter)
-
-    # UI operations
-    def isSimpleUI(self):
-        # Right now the Event dialog only handles a single RRULE (but we allow
-        # any number of EXDATES as deleted
-        # instances will appear as EXDATES)
+    def isSimpleUI(self) -> bool:
         if ((len(self.mRrules) > 1) or (len(self.mExrules) > 0) or
                 (len(self.mRdates) > 0) or (len(self.mRperiods) > 0)):
             return False
-
-        # Also, check the rule iteself
         elif len(self.mRrules) == 1:
-            return self.mRrules.firstElement().isSimpleRule()
+            return self.mRrules[0].isSimpleRule()
         else:
             return True
 
-    def isAdvancedUI(self):
-        # Right now the Event dialog only handles a single RRULE
+    def isAdvancedUI(self) -> bool:
         if ((len(self.mRrules) > 1) or (len(self.mExrules) > 0) or
                 (len(self.mRdates) > 0) or (len(self.mRperiods) > 0)):
             return False
-
-        # Also, check the rule iteself
         elif len(self.mRrules) == 1:
-            return self.mRrules.firstElement().isAdvancedRule()
+            return self.mRrules[0].isAdvancedRule()
         else:
             return True
 
-    def getUIRecurrence(self):
+    def getUIRecurrence(self) -> Any:
         if len(self.mRrules) == 1:
             return self.mRrules[0]
         else:
             return None
 
-    def getUIDescription(self):
-        # Check for anything
+    def getUIDescription(self) -> str:
         if not self.hasRecurrence():
             return "No Recurrence"
-
-        # Look for a single RRULE and return its descriptor
         if ((len(self.mRrules) == 1) and (len(self.mExrules) == 0) and (len(self.mRdates) == 0) and
                 (len(self.mExdates) == 0) and (len(self.mRperiods) == 0) and
                 (len(self.mExperiods) == 0)):
-            return self.mRrules.firstElement().getUIDescription()
-
-        # Indicate some form of complex recurrence
+            return self.mRrules[0].getUIDescription()
         return "Multiple recurrence rules, dates or exclusions"
