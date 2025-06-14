@@ -15,38 +15,29 @@
 ##
 
 # iCalendar URI value
-
+from typing import Any
 from pycalendar import xmldefinitions, utils
 from pycalendar.plaintextvalue import PlainTextValue
 from pycalendar.value import Value
 from pycalendar.parser import ParserContext
 
-
 class URIValue(PlainTextValue):
+    mValue: str
 
-    def getType(self):
+    def getType(self) -> int:
         return URIValue.VALUETYPE_URI
 
-    def parse(self, data, variant):
-
+    def parse(self, data: str, variant: Any) -> None:
         if ParserContext.BACKSLASH_IN_URI_VALUE == ParserContext.PARSER_FIX:
-            # Decoding required
             self.mValue = utils.decodeTextValue(data)
         else:
-            # No decoding required
             self.mValue = data
 
-    # os - StringIO object
-    def generate(self, os):
-        """
-        Handle a client bug where it sometimes includes a \n in the value and we need
-        to make sure that gets encoded rather than included literally which would break syntax.
-        """
+    def generate(self, os: Any) -> None:
         if '\n' in self.mValue:
             try:
-                # No encoding required
                 os.write(self.mValue.replace("\n", "\\n"))
-            except:
+            except Exception:
                 pass
         else:
             super(URIValue, self).generate(os)

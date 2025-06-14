@@ -15,13 +15,13 @@
 ##
 
 import xml.etree.cElementTree as XML
+from typing import Any
 
-
-def makeTag(namespace, name):
+def makeTag(namespace: str, name: str) -> str:
     return "{%s}%s" % (namespace, name.lower(),)
 
 
-def toString(root):
+def toString(root) -> str | Any:
 
     data = """<?xml version="1.0" encoding="utf-8"?>\n"""
 

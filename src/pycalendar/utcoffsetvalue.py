@@ -15,57 +15,44 @@
 ##
 
 # iCalendar UTC Offset value
-
-from cStringIO import StringIO
+from typing import Any
+from io import StringIO
 from pycalendar import xmldefinitions
 from pycalendar.value import Value
 
-
 class UTCOffsetValue(Value):
+    mValue: int
 
-    def __init__(self, value=0):
+    def __init__(self, value: int = 0) -> None:
         self.mValue = value
 
-    def duplicate(self):
+    def duplicate(self) -> "UTCOffsetValue":
         return UTCOffsetValue(self.mValue)
 
-    def getType(self):
+    def getType(self) -> int:
         return Value.VALUETYPE_UTC_OFFSET
 
-    def parse(self, data, variant):
-
+    def parse(self, data: str, variant: Any) -> None:
         fullISO = (variant == "vcard")
-
-        # Must be of specific lengths
         datalen = len(data)
         if datalen not in ((6, 9,) if fullISO else (5, 7,)):
             self.mValue = 0
             raise ValueError("UTCOffset: invalid format")
-
-        # Get sign
         if data[0] not in ('+', '-'):
             raise ValueError("UTCOffset: does not start with '+' or '-'")
         plus = (data[0] == '+')
-
-        # Get hours
         hours = int(data[1:3])
-
-        # Get minutes
         index = 4 if fullISO else 3
         mins = int(data[index:index + 2])
-
-        # Get seconds if present
         secs = 0
         if datalen > 6:
             index = 7 if fullISO else 5
             secs = int(data[index:])
-
         self.mValue = ((hours * 60) + mins) * 60 + secs
         if not plus:
             self.mValue = -self.mValue
 
-    # os - StringIO object
-    def generate(self, os, fullISO=False):
+    def generate(self, os: Any, fullISO: bool = False) -> None:
         try:
             abs_value = self.mValue
             if abs_value < 0:
@@ -73,43 +60,37 @@ class UTCOffsetValue(Value):
                 abs_value = -self.mValue
             else:
                 sign = "+"
-
             secs = abs_value % 60
-            mins = (abs_value / 60) % 60
-            hours = abs_value / (60 * 60)
-
+            mins = (abs_value // 60) % 60
+            hours = abs_value // (60 * 60)
             s = ("%s%02d:%02d" if fullISO else "%s%02d%02d") % (sign, hours, mins,)
             if (secs != 0):
                 s = ("%s:%02d" if fullISO else "%s%02d") % (s, secs,)
-
             os.write(s)
-        except:
+        except Exception:
             pass
 
-    def writeXML(self, node, namespace):
-
+    def writeXML(self, node: Any, namespace: Any) -> None:
         os = StringIO()
         self.generate(os)
         text = os.getvalue()
         text = text[:-2] + ":" + text[-2:]
-
         value = self.getXMLNode(node, namespace)
         value.text = text
 
-    def parseJSONValue(self, jobject):
+    def parseJSONValue(self, jobject: Any) -> None:
         self.parse(str(jobject), variant="vcard")
 
-    def writeJSONValue(self, jobject):
-
+    def writeJSONValue(self, jobject: list) -> None:
         os = StringIO()
         self.generate(os, fullISO=True)
         text = os.getvalue()
         jobject.append(text)
 
-    def getValue(self):
+    def getValue(self) -> int:
         return self.mValue
 
-    def setValue(self, value):
+    def setValue(self, value: int) -> None:
         self.mValue = value
 
 Value.registerType(Value.VALUETYPE_UTC_OFFSET, UTCOffsetValue, xmldefinitions.value_utc_offset)

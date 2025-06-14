@@ -15,14 +15,12 @@
 ##
 
 # ICalendar Value class
-
+from typing import Any, ClassVar, Dict, Type, Optional
 from pycalendar import xmlutils
 from pycalendar.valueutils import ValueMixin
 import xml.etree.cElementTree as XML
 
-
 class Value(ValueMixin):
-
     (
         VALUETYPE_ADR,
         VALUETYPE_BINARY,
@@ -49,63 +47,68 @@ class Value(ValueMixin):
         VALUETYPE_XNAME,
     ) = range(23)
 
-    _typeMap = {}
-    _xmlMap = {}
-    _jsonMap = {}
+    _typeMap: ClassVar[Dict[int, Type["Value"]]] = {}
+    _xmlMap: ClassVar[Dict[int, Any]] = {}
+    _jsonMap: ClassVar[Dict[int, Any]] = {}
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.getType(), self.getValue()))
 
-    def __ne__(self, other):
+    def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Value):
             return False
         return self.getType() == other.getType() and self.getValue() == other.getValue()
 
     @classmethod
-    def registerType(clz, type, cls, xmlNode, jsonNode=None):
+    def registerType(
+        clz,
+        type: int,
+        cls: Type["Value"],
+        xmlNode: Any,
+        jsonNode: Optional[Any] = None
+    ) -> None:
         clz._typeMap[type] = cls
         clz._xmlMap[type] = xmlNode
         clz._jsonMap[type] = xmlNode if jsonNode is None else jsonNode
 
     @classmethod
-    def createFromType(clz, value_type):
-        # Create the value type
+    def createFromType(clz, value_type: int) -> "Value":
         created = clz._typeMap.get(value_type, None)
         if created:
             return created()
         else:
             return clz._typeMap.get(Value.VALUETYPE_UNKNOWN)(value_type)
 
-    def getType(self):
+    def getType(self) -> int:
         raise NotImplementedError
 
-    def getRealType(self):
+    def getRealType(self) -> int:
         return self.getType()
 
-    def getValue(self):
+    def getValue(self) -> Any:
         raise NotImplementedError
 
-    def setValue(self, value):
+    def setValue(self, value: Any) -> None:
         raise NotImplementedError
 
-    def parse(self, data, variant):
+    def parse(self, data: Any, variant: Any) -> None:
         raise NotImplementedError
 
-    def writeXML(self, node, namespace):
+    def writeXML(self, node: Any, namespace: Any) -> None:
         raise NotImplementedError
 
-    def parseJSONValue(self, jobject):
+    def parseJSONValue(self, jobject: Any) -> None:
         raise NotImplementedError
 
-    def writeJSON(self, jobject):
+    def writeJSON(self, jobject: list) -> None:
         jobject.append(self._jsonMap[self.getType()])
         self.writeJSONValue(jobject)
 
-    def writeJSONValue(self, jobject):
+    def writeJSONValue(self, jobject: list) -> None:
         raise NotImplementedError
 
-    def getXMLNode(self, node, namespace):
+    def getXMLNode(self, node: Any, namespace: Any) -> Any:
         return XML.SubElement(node, xmlutils.makeTag(namespace, self._xmlMap[self.getType()]))

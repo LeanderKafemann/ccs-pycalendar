@@ -13,14 +13,11 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ##
-
+from typing import Any, Callable, Dict
 from pycalendar.plaintextvalue import PlainTextValue
 
-# Grabbed from http://docs.python.org/library/functools.html since we need to support Python 2.5
-
-
-def partial(func, *args, **keywords):
-    def newfunc(*fargs, **fkeywords):
+def partial(func: Callable, *args: Any, **keywords: Any) -> Callable:
+    def newfunc(*fargs: Any, **fkeywords: Any) -> Any:
         newkeywords = keywords.copy()
         newkeywords.update(fkeywords)
         return func(*(args + fargs), **newkeywords)
@@ -29,45 +26,35 @@ def partial(func, *args, **keywords):
     newfunc.keywords = keywords
     return newfunc
 
-
 class PropertyValueChecks(object):
-
     @staticmethod
-    def stringValue(text, property):
-
+    def stringValue(text: str, property: Any) -> bool:
         value = property.getValue()
         if value and isinstance(value, PlainTextValue):
             value = value.getValue()
             return value.lower() == text.lower()
-
         return False
 
     @staticmethod
-    def alwaysUTC(property):
-
+    def alwaysUTC(property: Any) -> bool:
         value = property.getDateTimeValue()
         if value:
             value = value.getValue()
             return value.utc()
-
         return False
 
     @staticmethod
-    def numericRange(low, high, property):
-
+    def numericRange(low: int, high: int, property: Any) -> bool:
         value = property.getIntegerValue()
         if value:
             value = value.getValue()
-            return value >= low and value <= high
-
+            return low <= value <= high
         return False
 
     @staticmethod
-    def positiveIntegerOrZero(property):
-
+    def positiveIntegerOrZero(property: Any) -> bool:
         value = property.getIntegerValue()
         if value:
             value = value.getValue()
             return value >= 0
-
         return False
