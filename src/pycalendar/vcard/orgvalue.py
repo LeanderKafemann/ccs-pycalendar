@@ -15,41 +15,41 @@
 ##
 
 # vCard ORG value
-
+from typing import Any, IO, Tuple, Union
 from pycalendar import utils
 from pycalendar.value import Value
-
 
 class OrgValue(Value):
     """
     mValue is a str or tuple of str
     """
+    mValue: Union[str, Tuple[str, ...]]
 
-    def __init__(self, value=None):
+    def __init__(self, value: Union[str, Tuple[str, ...]] = None) -> None:
         self.mValue = value
 
-    def duplicate(self):
+    def duplicate(self) -> "OrgValue":
         return OrgValue(self.mValue)
 
-    def getType(self):
+    def getType(self) -> int:
         return Value.VALUETYPE_ORG
 
-    def parse(self, data, variant="vcard"):
+    def parse(self, data: str, variant: str = "vcard") -> None:
         self.mValue = utils.parseTextList(data, ';')
 
-    def generate(self, os):
+    def generate(self, os: IO[str]) -> None:
         utils.generateTextList(os, self.mValue, ';')
 
-    def parseJSONValue(self, jobject):
+    def parseJSONValue(self, jobject: Any) -> None:
         self.mValue = tuple(map(lambda x: x.encode("utf-8"), jobject))
 
-    def writeJSONValue(self, jobject):
+    def writeJSONValue(self, jobject: list) -> None:
         jobject.append(list(self.mValue))
 
-    def getValue(self):
+    def getValue(self) -> Union[str, Tuple[str, ...]]:
         return self.mValue
 
-    def setValue(self, value):
+    def setValue(self, value: Union[str, Tuple[str, ...]]) -> None:
         self.mValue = value
 
 Value.registerType(Value.VALUETYPE_ORG, OrgValue, None)

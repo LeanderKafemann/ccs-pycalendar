@@ -14,53 +14,51 @@
 #    limitations under the License.
 ##
 
-from cStringIO import StringIO
+from typing import Any, List, ClassVar, Tuple
+from io import StringIO
 from pycalendar.containerbase import ContainerBase
 from pycalendar.exceptions import InvalidData
 from pycalendar.parser import ParserContext
 from pycalendar.utils import readFoldedLine
 from pycalendar.vcard import definitions
-from pycalendar.vcard.definitions import VCARD, Property_VERSION, \
-    Property_PRODID, Property_UID
+from pycalendar.vcard.definitions import VCARD, Property_VERSION, Property_PRODID, Property_UID
 from pycalendar.vcard.property import Property
 from pycalendar.vcard.validation import VCARD_VALUE_CHECKS
 import json
 
-
 class Card(ContainerBase):
+    sContainerDescriptor: ClassVar[str] = "vCard"
+    sComponentType: ClassVar[Any] = None
+    sPropertyType: ClassVar[Any] = Property
 
-    sContainerDescriptor = "vCard"
-    sComponentType = None
-    sPropertyType = Property
+    sFormatText: ClassVar[str] = "text/vcard"
+    sFormatJSON: ClassVar[str] = "application/vcard+json"
 
-    sFormatText = "text/vcard"
-    sFormatJSON = "application/vcard+json"
-
-    propertyCardinality_1 = (
+    propertyCardinality_1: ClassVar[Tuple[str, ...]] = (
         definitions.Property_VERSION,
         definitions.Property_N,
     )
 
-    propertyCardinality_0_1 = (
+    propertyCardinality_0_1: ClassVar[Tuple[str, ...]] = (
         definitions.Property_BDAY,
         definitions.Property_PRODID,
         definitions.Property_REV,
         definitions.Property_UID,
     )
 
-    propertyCardinality_1_More = (
+    propertyCardinality_1_More: ClassVar[Tuple[str, ...]] = (
         definitions.Property_FN,
     )
 
-    propertyValueChecks = VCARD_VALUE_CHECKS
+    propertyValueChecks: ClassVar[Any] = VCARD_VALUE_CHECKS
 
-    def duplicate(self):
+    def duplicate(self) -> "Card":
         return super(Card, self).duplicate()
 
-    def getType(self):
+    def getType(self) -> str:
         return VCARD
 
-    def sortedPropertyKeyOrder(self):
+    def sortedPropertyKeyOrder(self) -> Tuple[str, ...]:
         return (
             Property_VERSION,
             Property_PRODID,
@@ -68,116 +66,77 @@ class Card(ContainerBase):
         )
 
     @classmethod
-    def parseMultipleData(cls, data, format):
-
+    def parseMultipleData(cls, data: Any, format: str) -> List["Card"]:
         if format == cls.sFormatText:
             return cls.parseMultipleTextData(data)
         elif format == cls.sFormatJSON:
             return cls.parseMultipleJSONData(data)
+        return []
 
     @classmethod
-    def parseMultipleTextData(cls, ins):
-
+    def parseMultipleTextData(cls, ins: Any) -> List["Card"]:
         if isinstance(ins, str):
             ins = StringIO(ins)
 
-        results = []
-
-        card = cls(add_defaults=False)
+        results: List[Card] = []
+        card: Card = cls(add_defaults=False)
 
         LOOK_FOR_VCARD = 0
         GET_PROPERTY = 1
-
         state = LOOK_FOR_VCARD
-
-        # Get lines looking for start of calendar
-        lines = [None, None]
+        lines: List[Any] = [None, None]
 
         while readFoldedLine(ins, lines):
-
             line = lines[0]
             if state == LOOK_FOR_VCARD:
-
-                # Look for start
                 if line == card.getBeginDelimiter():
-                    # Next state
                     state = GET_PROPERTY
-
-                # Handle blank line
                 elif len(line) == 0:
-                    # Raise if requested, otherwise just ignore
                     if ParserContext.BLANK_LINES_IN_DATA == ParserContext.PARSER_RAISE:
                         raise InvalidData("vCard data has blank lines")
-
-                # Unrecognized data
                 else:
                     raise InvalidData("vCard data not recognized", line)
-
             elif state == GET_PROPERTY:
-
-                # Look for end of object
                 if line == card.getEndDelimiter():
-
-                    # Finalise the current calendar
                     card.finalise()
-
-                    # Validate some things
                     if not card.hasProperty("VERSION"):
                         raise InvalidData("vCard missing VERSION", "")
-
                     results.append(card)
-
-                    # Change state
                     card = Card(add_defaults=False)
                     state = LOOK_FOR_VCARD
-
-                # Blank line
                 elif len(line) == 0:
-                    # Raise if requested, otherwise just ignore
                     if ParserContext.BLANK_LINES_IN_DATA == ParserContext.PARSER_RAISE:
                         raise InvalidData("vCard data has blank lines")
-
-                # Must be a property
                 else:
-
-                    # Parse parameter/value for top-level calendar item
                     prop = Property.parseText(line)
-
-                    # Check for valid property
                     if not card.validProperty(prop):
                         raise InvalidData("Invalid property", str(prop))
                     else:
                         card.addProperty(prop)
-
-        # Check for truncated data
         if state != LOOK_FOR_VCARD:
             raise InvalidData("vCard data not complete")
-
         return results
 
     @classmethod
-    def parseMultipleJSONData(cls, data):
-
+    def parseMultipleJSONData(cls, data: Any) -> List["Card"]:
         if not isinstance(data, str):
             data = data.read()
         try:
             jobjects = json.loads(data)
         except ValueError as e:
             raise InvalidData("JSON error: '{}'".format(e), data)
-        results = []
+        results: List[Card] = []
         for jobject in jobjects:
             results.append(cls.parseJSON(jobject, None, cls(add_defaults=False)))
         return results
 
-    def addDefaultProperties(self):
+    def addDefaultProperties(self) -> None:
         self.addProperty(Property(definitions.Property_PRODID, Card.sProdID))
         self.addProperty(Property(definitions.Property_VERSION, "3.0"))
 
-    def validProperty(self, prop):
+    def validProperty(self, prop: Property) -> bool:
         if prop.getName() == definitions.Property_VERSION:
-
             tvalue = prop.getValue()
             if ((tvalue is None) or (tvalue.getValue() != "3.0")):
                 return False
-
         return True
