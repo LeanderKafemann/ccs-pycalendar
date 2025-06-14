@@ -1,13 +1,2 @@
-*.egg-info/
-*.o
-*.py[co]
-*.so
-_trial_temp*/
-build/
-dropin.cache
-*~
-*.lock
-.develop/
-/.settings/
-/.coverage
-/MANIFEST
+.vs/*
+src/pycalendar.egg-info/*

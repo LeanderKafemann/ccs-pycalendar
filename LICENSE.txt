@@ -1,3 +1,5 @@
+COPYRIGHT 2025 LEANDER KAFEMANN
+
 
                                  Apache License
                            Version 2.0, January 2004
