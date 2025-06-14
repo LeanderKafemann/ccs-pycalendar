@@ -1,0 +1,19 @@
+[project]
+name = "pycalendarNew"
+version = "1.0.0"
+authors = [
+  {name="Leander Kafemann", email="leander@kafemann.berlin" },
+]
+description = "easy server-setup"
+readme = "README"
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+]
+
+[project.urls]
+Homepage = "https://github.com/LeanderKafemann/ccs-pycalendar"
